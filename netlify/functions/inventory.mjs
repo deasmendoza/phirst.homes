@@ -1,10 +1,14 @@
 // GET /api/inventory
 //
 // Reads the PHirst inventory spreadsheet on the server and returns only what the
-// calculator needs. The spreadsheet's address is NOT in this repository: it lives in
-// the Netlify environment variable INVENTORY_SHEET_ID, so visitors never see it.
+// calculator needs. This runs on Netlify's servers, so the spreadsheet's address is
+// never sent to a visitor's browser. It is, however, written below, so anyone who can
+// read this repository can see it. Setting the Netlify environment variable
+// INVENTORY_SHEET_ID overrides it.
 //
 // Fresh data: Netlify's CDN keeps each answer for 10 minutes, then asks Google again.
+
+const DEFAULT_SHEET_ID = '1e5ZXt0tdi27PyH4sVRrhFByLitydHUEW';
 
 // Tabs of the spreadsheet (their names change daily with the date; these ids do not).
 const TABS = ['791045622', '1055632924', '1610931865', '418692951'];
@@ -112,8 +116,7 @@ const json = (status, data, extra = {}) =>
   });
 
 export default async function handler() {
-  const sheetId = process.env.INVENTORY_SHEET_ID;
-  if (!sheetId) return json(503, { error: 'Inventory is not connected yet (INVENTORY_SHEET_ID is not set).' });
+  const sheetId = process.env.INVENTORY_SHEET_ID || DEFAULT_SHEET_ID;
 
   const geos = (process.env.INVENTORY_GEOS || '')
     .split(',')
