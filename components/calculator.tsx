@@ -66,27 +66,33 @@ function Field({ icon, label, children }: { icon: string; label: string; childre
   );
 }
 
-function Row({ label, value, highlight, big }: { label: string; value: ReactNode; highlight?: boolean; big?: boolean }) {
+function Row({ label, value, highlight, grow }: { label: string; value: ReactNode; highlight?: boolean; grow?: boolean }) {
   return (
     <div
-      className={`flex items-baseline justify-between gap-4 px-3.5 py-[7px] text-[15px] ${
+      className={`flex justify-between gap-4 px-3.5 py-[7px] text-[15px] ${grow ? 'flex-1 items-center' : 'items-baseline'} ${
         highlight ? 'bg-[#f0d48a] font-bold' : 'border-b border-black/10 last:border-b-0'
       }`}
     >
       <span>{label}</span>
-      <span className={`text-right font-bold tabular-nums ${big ? 'text-[26px] leading-none' : ''}`}>{value}</span>
+      <span className="text-right font-bold tabular-nums">{value}</span>
     </div>
   );
 }
 
-function Card({ icon, title, children }: { icon: string; title: string; children: ReactNode }) {
+function SectionTitle({ icon, children }: { icon: string; children: ReactNode }) {
   return (
-    <div>
-      <h3 className="mb-2 flex items-center gap-2.5 font-serif text-[19px] font-semibold text-gold-soft">
-        <Icon name={icon} className="size-6 text-gold" />
-        {title}
-      </h3>
-      <div className="overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d]">{children}</div>
+    <h3 className="mb-2 flex items-center gap-2.5 font-serif text-[19px] font-semibold text-gold-soft">
+      <Icon name={icon} className="size-6 text-gold" />
+      {children}
+    </h3>
+  );
+}
+
+function PriceCell({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`flex items-baseline justify-between gap-3 px-4 py-2.5 sm:block ${highlight ? 'bg-[#f0d48a]' : 'border-b border-black/10 sm:border-b-0 sm:border-r'}`}>
+      <dt className={`text-[13px] ${highlight ? 'font-bold' : ''}`}>{label}</dt>
+      <dd className={`font-bold tabular-nums ${highlight ? 'text-[22px] leading-tight' : 'text-[19px] leading-tight'}`}>{value}</dd>
     </div>
   );
 }
@@ -363,7 +369,7 @@ export function Calculator() {
           {status === 'ready' && showResult && result.rf != null && (
             <>
               {/* Unit header */}
-              <div className="mb-5 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
+              <div className="mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
                 <div className="relative h-[118px] w-[200px] overflow-hidden rounded-lg border border-white/15 bg-[#101b33]">
                   {seriesImage(result.unit.type) ? (
                     <img src={seriesImage(result.unit.type)!} alt="" className="absolute bottom-0 left-0 h-[150%] w-full max-w-none object-cover object-[50%_78%]" />
@@ -396,64 +402,78 @@ export function Calculator() {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-white/15 p-4">
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <Card icon="coins" title="Price Details">
-                    <Row label="Total Contract Price (TCP)" value={money(result.beforeVat)} />
-                    {result.vat > 0 && <Row label="VAT (12%)" value={money(result.vat)} />}
-                    <Row label="Net Contract Price" value={money(result.net)} highlight />
-                  </Card>
-
-                  <Card icon="wallet" title={isCash ? 'Payment Schedule' : 'Downpayment'}>
-                    {result.schedule.dpPct != null && <Row label={`Downpayment (${pct(result.schedule.dpPct)})`} value={money(result.schedule.total)} />}
-                    <Row label="Reservation Fee" value={<>{money(result.rf)} <span className="font-normal">(included)</span></>} />
-                    {result.schedule.spots.map((l) => <Row key={l.label} label={l.label} value={money(l.amount)} />)}
-                    {result.schedule.monthly && (
-                      <Row
-                        label={isCash ? 'Monthly Payment' : 'Monthly Downpayment'}
-                        value={<>{money(result.schedule.monthly.amount)} <span className="mx-0.5">×</span> {result.schedule.monthly.count} months</>}
-                        highlight
-                      />
-                    )}
-                    {result.schedule.last && <Row label={result.schedule.last.label} value={money(result.schedule.last.amount)} />}
-                    {result.schedule.extra.map((l) => <Row key={l.label} label={l.label} value={money(l.amount)} />)}
-                    <Row label={isCash ? 'Total Payment' : 'Total Downpayment'} value={money(result.schedule.total)} />
-                  </Card>
+              <div className="space-y-4 rounded-xl border border-white/15 p-4">
+                {/* Price Details: one full-width strip */}
+                <div>
+                  <SectionTitle icon="coins">Price Details</SectionTitle>
+                  <dl className="grid overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d] sm:grid-flow-col sm:auto-cols-fr">
+                    <PriceCell label="Total Contract Price (TCP)" value={money(result.beforeVat)} />
+                    {result.vat > 0 && <PriceCell label="VAT (12%)" value={money(result.vat)} />}
+                    <PriceCell label="Net Contract Price" value={money(result.net)} highlight />
+                  </dl>
                 </div>
 
-                <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-                  {result.amort ? (
-                    <Card icon="bank" title="Balance & Monthly Amortization">
-                      <Row label={`Balance / Loanable Amount (${pct(1 - (result.schedule.dpPct ?? 0))})`} value={money(result.balance)} />
-                      {result.amort.mri != null && (
-                        <>
-                          <Row label="Monthly Amortization" value={money(result.amort.amortization)} />
-                          <Row label="MRI / Fire Insurance" value={money(result.amort.mri)} />
-                        </>
+                {/* Downpayment | Balance & Monthly Amortization: two equal columns */}
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="flex flex-col">
+                    <SectionTitle icon="wallet">{isCash ? 'Payment Schedule' : 'Downpayment'}</SectionTitle>
+                    <div className="flex flex-1 flex-col overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d]">
+                      {result.schedule.dpPct != null && <Row grow label={`Downpayment (${pct(result.schedule.dpPct)})`} value={money(result.schedule.total)} />}
+                      <Row grow label="Reservation Fee" value={<>{money(result.rf)} <span className="font-normal">(included)</span></>} />
+                      {result.schedule.spots.map((l) => <Row grow key={l.label} label={l.label} value={money(l.amount)} />)}
+                      {result.schedule.monthly && (
+                        <Row
+                          grow
+                          label={isCash ? 'Monthly Payment' : 'Monthly Downpayment'}
+                          value={<>{money(result.schedule.monthly.amount)} <span className="mx-0.5">×</span> {result.schedule.monthly.count} months</>}
+                          highlight
+                        />
                       )}
-                      <Row label="Estimated Monthly Amortization" value={money(result.amort.total)} highlight big />
-                      <div className="px-3.5 py-1.5 text-[13px]">
-                        Interest Rate: {result.amort.rateNote} <span className="mx-1 text-black/35">|</span> Term: {years} Years
-                      </div>
-                    </Card>
-                  ) : (
-                    <Card icon="bank" title="Balance & Monthly Amortization">
-                      <div className="px-3.5 py-4 text-[15px]">Cash term: there is no loan amortization. Payments follow the schedule above.</div>
-                    </Card>
-                  )}
+                      {result.schedule.last && <Row grow label={result.schedule.last.label} value={money(result.schedule.last.amount)} />}
+                      {result.schedule.extra.map((l) => <Row grow key={l.label} label={l.label} value={money(l.amount)} />)}
+                      <Row grow label={isCash ? 'Total Payment' : 'Total Downpayment'} value={money(result.schedule.total)} />
+                    </div>
+                  </div>
 
-                  <div className="rounded-lg border border-white/25 p-4 text-[15px] text-white">
-                    <h3 className="mb-2.5 flex items-center gap-2.5 font-serif text-[17px] font-semibold text-gold-soft"><Icon name="info" /> Computation Summary</h3>
-                    <ul className="space-y-1.5">
-                      <li>Financing: {financingLabel}</li>
-                      <li>Payment Term: {term?.label}</li>
-                      <li>Years to Pay: {needsYears ? `${years} Years` : 'Not applicable'}</li>
-                    </ul>
+                  <div className="flex flex-col">
+                    <SectionTitle icon="bank">Balance &amp; Monthly Amortization</SectionTitle>
+                    <div className="overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d]">
+                      {result.amort ? (
+                        <>
+                          <Row label={`Balance / Loanable Amount (${pct(1 - (result.schedule.dpPct ?? 0))})`} value={money(result.balance)} />
+                          {result.amort.mri != null && (
+                            <>
+                              <Row label="Monthly Amortization" value={money(result.amort.amortization)} />
+                              <Row label="MRI / Fire Insurance" value={money(result.amort.mri)} />
+                            </>
+                          )}
+                          <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 bg-[#f0d48a] px-3.5 py-2.5">
+                            <span className="pb-1 text-[15px] font-bold">Estimated Monthly Amortization</span>
+                            <span className="ml-auto text-[34px] font-extrabold leading-none tabular-nums">{money(result.amort.total)}</span>
+                          </div>
+                          <div className="px-3.5 py-1.5 text-[13px]">
+                            Interest Rate: {result.amort.rateNote} <span className="mx-1 text-black/35">|</span> Term: {years} Years
+                          </div>
+                        </>
+                      ) : (
+                        <div className="px-3.5 py-3 text-[15px]">Cash term: there is no loan amortization. Payments follow the schedule on the left.</div>
+                      )}
+                    </div>
+
+                    {/* Computation Summary: compact panel inside the amortization column */}
+                    <div className="mt-3 flex-1 rounded-lg border border-white/25 px-4 py-3 text-[14px] text-white">
+                      <h3 className="mb-1.5 flex items-center gap-2 font-serif text-[16px] font-semibold text-gold-soft"><Icon name="info" className="size-[18px]" /> Computation Summary</h3>
+                      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5">
+                        <dt className="text-white/65">Financing</dt><dd className="font-semibold">{financingLabel}</dd>
+                        <dt className="text-white/65">Payment Term</dt><dd className="font-semibold">{term?.label}</dd>
+                        <dt className="text-white/65">Years to Pay</dt><dd className="font-semibold">{needsYears ? `${years} Years` : 'Not applicable'}</dd>
+                      </dl>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="print-hide mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="print-hide mt-4 grid gap-3 sm:grid-cols-3">
                 <a href={viewing} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-[linear-gradient(180deg,#ffd77a,#f2b63c_55%,#c98a1a)] px-5 text-[17px] font-bold text-[#14100a] shadow-lg shadow-black/40 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                   <Icon name="calendar" /> Book a Viewing
                 </a>
