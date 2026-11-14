@@ -5,3 +5,13 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+# The calculator now lives on the homepage.
+[[redirects]]
+  from = "/calculator/*"
+  to = "/#calculator"
+  status = 302
+[[redirects]]
+  from = "/calculator"
+  to = "/#calculator"
+  status = 302

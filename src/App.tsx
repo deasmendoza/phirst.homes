@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Component as SpotlightCursor } from '@/components/ui/spotlight-cursor';
 import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
+import { Calculator } from '@/components/calculator';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -23,6 +24,7 @@ export default function App() {
       <MobileHeader />
       <main>
         <Hero desktop={desktop} />
+        <Calculator />
       </main>
       {desktop && (
         <SpotlightCursor className="" config={{ color: '#f5b942', radius: 220, brightness: 0.14 }} />

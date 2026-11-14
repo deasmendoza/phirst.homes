@@ -7,7 +7,9 @@
   --color-night: #05070d;
   --color-navy: #0a1224;
   --color-gold: #f2b63c;
+  --color-gold-soft: #ffd77a;
   --font-sans: "Montserrat", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --font-serif: "Playfair Display", Georgia, "Times New Roman", serif;
 }
 
 html,
@@ -21,4 +23,35 @@ body {
 .show-hotspots .hero-hotspot {
   background: rgba(255, 0, 80, 0.3);
   outline: 1px solid #ff0050;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Save / Print: only the computation, on white paper. */
+@media print {
+  body {
+    background: #fff;
+  }
+  header,
+  section[aria-label="PHirst house models"],
+  canvas,
+  .print-hide {
+    display: none !important;
+  }
+  #calculator {
+    background: #fff !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+  }
+  #calculator * {
+    color: #111 !important;
+    border-color: #999 !important;
+    backdrop-filter: none !important;
+  }
+  .print-area {
+    background: #fff !important;
+    border: 0 !important;
+  }
 }

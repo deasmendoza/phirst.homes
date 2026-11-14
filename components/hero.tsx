@@ -13,7 +13,7 @@ const LINKS = [
   { label: 'PHIRST.HOMES home', href: '/', left: 6.5, top: 2.2, width: 12, height: 21.4, round: true },
   { label: 'House Models', href: '/house-models/', left: 20.9, top: 1.2, width: 14.55, height: 12.2 },
   { label: 'Locations', href: '/locations/', left: 35.45, top: 1.2, width: 11.82, height: 12.2 },
-  { label: 'Calculator', href: '/calculator/', left: 47.27, top: 1.2, width: 12.01, height: 12.2 },
+  { label: 'Calculator', href: '/#calculator', left: 47.27, top: 1.2, width: 12.01, height: 12.2 },
   { label: 'Careers', href: '/careers/', left: 59.28, top: 1.2, width: 11.72, height: 12.2 },
   { label: 'Book a Viewing', href: '/contact/', left: 71, top: 1.2, width: 14.94, height: 12.2 },
   { label: 'Contact', href: '/contact/', left: 85.94, top: 1.2, width: 10.8, height: 12.2 },
