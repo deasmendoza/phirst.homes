@@ -222,3 +222,9 @@ export function reservationFee(unitType: string, project: string): number | null
   if (/^CORIN/.test(t)) return 50000;
   return null;
 }
+
+/**
+ * Pag-IBIG is not offered for these models (owner's instruction, November 2026):
+ * their prices are beyond what Pag-IBIG lends.
+ */
+export const pagibigAvailable = (unitType: string) => !/^(UNNA|DUA|BRENNA|CARTLAND|CHARLES|CHRISTIE|CORIN)\b/.test(unitType.toUpperCase());

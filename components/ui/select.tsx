@@ -4,6 +4,7 @@ export interface Option {
   value: string;
   label: string;
   group?: string;
+  disabled?: boolean;
 }
 
 interface Props {
@@ -53,7 +54,7 @@ export function Select({ label, placeholder, value, options, onChange, disabled,
   }, [open, active, shown]);
 
   const pick = (o: Option | undefined) => {
-    if (!o) return;
+    if (!o || o.disabled) return;
     onChange(o.value);
     setOpen(false);
     root.current?.querySelector('button')?.focus();
@@ -136,11 +137,12 @@ export function Select({ label, placeholder, value, options, onChange, disabled,
                   <div
                     role="option"
                     aria-selected={isSelected}
+                    aria-disabled={o.disabled || undefined}
                     data-active={i === active}
                     onPointerEnter={() => setActive(i)}
                     onClick={() => pick(o)}
-                    className={`flex cursor-pointer items-center justify-between gap-3 px-3.5 py-2 text-[15px] ${
-                      i === active ? 'bg-[#f0d48a]' : isSelected ? 'bg-[#f0d48a]/45' : ''
+                    className={`flex items-center justify-between gap-3 px-3.5 py-2 text-[15px] ${
+                      o.disabled ? 'cursor-not-allowed text-black/40' : `cursor-pointer ${i === active ? 'bg-[#f0d48a]' : isSelected ? 'bg-[#f0d48a]/45' : ''}`
                     } ${isSelected ? 'font-semibold' : ''}`}
                   >
                     <span>{o.label}</span>

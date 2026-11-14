@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Select, type Option } from '@/components/ui/select';
-import { FINANCING, TERMS, YEARS, loan, reservationFee, type Financing } from '@/lib/compute';
+import { FINANCING, TERMS, YEARS, loan, pagibigAvailable, reservationFee, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
   blockLot,
@@ -151,6 +151,7 @@ export function Calculator() {
   }, [units]);
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
+  const noPagibig = type !== '' && !pagibigAvailable(type);
   const terms = financing ? TERMS[financing] : [];
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
@@ -264,6 +265,11 @@ export function Calculator() {
                 onChange={(v) => {
                   setType(v);
                   setUnitId('');
+                  if (financing === 'pagibig' && !pagibigAvailable(v)) {
+                    setFinancing('');
+                    setTermId('');
+                    setYears('');
+                  }
                 }}
               />
             </Field>
@@ -275,7 +281,11 @@ export function Calculator() {
                 label="Financing"
                 placeholder="Select financing"
                 value={financing}
-                options={FINANCING.map((f) => ({ value: f.id, label: f.label }))}
+                options={FINANCING.map((f) =>
+                  f.id === 'pagibig' && noPagibig
+                    ? { value: f.id, label: 'Pag-IBIG (not available for this model)', disabled: true }
+                    : { value: f.id, label: f.label },
+                )}
                 onChange={(v) => {
                   setFinancing(v as Financing);
                   setTermId('');
