@@ -23,6 +23,7 @@ const EMAIL = 'm@phirst.homes';
 const peso = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money = (n: number) => `₱${peso.format(n)}`;
 const pct = (n: number) => `${+(n * 100).toFixed(2)}%`;
+const termsLabel = (terms: string) => titleCase(terms).replace('Rsbs', 'RSBS').replace(' The ', ' the ');
 
 const ICONS: Record<string, ReactNode> = {
   pin: <><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></>,
@@ -151,9 +152,24 @@ export function Calculator() {
 
   const units = useMemo(() => sortUnits(inventory.units.filter((u) => u.project === project && u.type === type)), [inventory, project, type]);
 
+  // Block & Lot order: Memo Terms units first, grouped by price from the lowest TCP up;
+  // RSBS units last, grouped under their RSBS tag instead of a price.
   const unitOptions = useMemo<Option[]>(() => {
     const manyPhases = new Set(units.map((u) => phaseLabel(u))).size > 1;
-    return units.map((u) => ({ value: unitKey(u), label: blockLot(u.code), group: manyPhases ? phaseLabel(u) : undefined }));
+    const isRsbs = (u: Unit) => /RSBS/.test(u.terms);
+    const option = (u: Unit, group: string): Option => ({
+      value: unitKey(u),
+      label: blockLot(u.code),
+      hint: manyPhases ? phaseLabel(u) : undefined,
+      group,
+    });
+    const byPrice = (a: Unit, b: Unit) => a.tcp - b.tcp; // sort is stable: block and lot order is kept within a price
+    const memo = units.filter((u) => !isRsbs(u)).sort(byPrice);
+    const rsbs = units.filter(isRsbs).sort((a, b) => a.terms.localeCompare(b.terms) || byPrice(a, b));
+    return [
+      ...memo.map((u) => option(u, `TCP: ${money(u.tcp)}`)),
+      ...rsbs.map((u) => option(u, termsLabel(u.terms))),
+    ];
   }, [units]);
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
@@ -393,7 +409,7 @@ export function Calculator() {
                 <div className="space-y-1.5 text-[15px] text-white md:border-l md:border-white/15 md:pl-6">
                   {result.unit.terms && (
                     <div className="mb-2.5 inline-block rounded-full bg-[linear-gradient(180deg,#ffd77a,#f2b63c)] px-4 py-1 text-sm font-bold text-[#14100a]">
-                      {titleCase(result.unit.terms).replace('Rsbs', 'RSBS').replace(' The ', ' the ')}
+                      {termsLabel(result.unit.terms)}
                     </div>
                   )}
                   {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {result.unit.turnover}</div>}
