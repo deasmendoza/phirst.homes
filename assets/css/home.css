@@ -1,0 +1,461 @@
+/* PHIRST.HOMES — night theme homepage
+   Desktop (>=1024px): pinned, scroll-scrubbed hero.
+   Mobile/tablet (<1024px): static layout, no pinning, no cursor effects. */
+
+:root {
+  --night: #05070d;
+  --navy: #0a1224;
+  --navy-2: #101b33;
+  --gold: #f2b63c;
+  --gold-soft: #ffd77a;
+  --gold-deep: #c98a1a;
+  --ink: #ffffff;
+  --ink-dim: #b9c2d6;
+  --line: rgba(242, 182, 60, 0.35);
+  --font: "Montserrat", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px; top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+}
+.skip-link:focus { top: 12px; }
+
+/* ---------- Buttons ---------- */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 30px;
+  border-radius: 999px;
+  border: 1px solid var(--gold-soft);
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 55%, var(--gold-deep));
+  color: #14100a;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(242, 182, 60, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4), 0 12px 36px rgba(242, 182, 60, 0.55); }
+.btn-gold:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+/* ---------- Mobile header (hidden on desktop: the nav lives in the hero image) ---------- */
+.m-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(5, 7, 13, 0.94);
+  border-bottom: 1px solid var(--line);
+}
+.m-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+}
+.m-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; letter-spacing: 0.06em; }
+.m-logo img { width: 48px; height: 48px; border-radius: 50%; }
+.m-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.m-menu summary::-webkit-details-marker { display: none; }
+.m-menu[open] summary { background: var(--gold); color: #111; border-color: var(--gold); }
+.m-nav {
+  position: absolute;
+  left: 0; right: 0; top: 100%;
+  display: grid;
+  background: var(--navy);
+  border-bottom: 1px solid var(--line);
+}
+.m-nav a {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  text-decoration: none;
+  font-weight: 600;
+}
+.m-nav a.is-cta { color: var(--gold); }
+
+/* ---------- Hero: shared ---------- */
+.hero { position: relative; background: var(--night); }
+.hero-frame { position: relative; overflow: hidden; }
+.hero-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.hero-nav a { position: absolute; display: block; }
+
+.hero-eyebrow {
+  margin: 0 0 10px;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.hero-title {
+  margin: 0 0 14px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.hero-title em { font-style: normal; color: var(--gold); }
+.hero-sub { margin: 0 0 24px; color: var(--ink-dim); }
+
+/* ---------- Hero: mobile / tablet static layout ---------- */
+@media (max-width: 1023px) {
+  .hero-backdrop,
+  .hero-nav,
+  .hero-wipe-line,
+  .hero-cursor,
+  .hero-series,
+  .hero-hint,
+  .hero-scrim { display: none; }
+
+  /* Only the first model is shown; the others are never rendered (and, being lazy, never downloaded here). */
+  .hero-layer:not(.is-first) { display: none; }
+
+  /* Crop away the nav bar painted into the top of the image; the real header above replaces it. */
+  .hero-frame { aspect-ratio: 4 / 3; }
+  .hero-layer {
+    inset: auto 0 0 0;
+    height: 131%;
+    object-fit: cover;
+    object-position: center bottom;
+  }
+  .hero-headline {
+    padding: 28px 20px 44px;
+    text-align: center;
+    background: linear-gradient(180deg, var(--navy), var(--night));
+  }
+  .hero-title { font-size: clamp(1.9rem, 7.5vw, 2.8rem); }
+  .hero-sub { font-size: 1rem; max-width: 34ch; margin-inline: auto; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .hero-frame { aspect-ratio: 16 / 8; }
+}
+
+/* ---------- Hero: desktop pinned stage ---------- */
+@media (min-width: 1024px) {
+  .m-header { display: none; }
+
+  .hero-stage {
+    position: relative;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    background: var(--night);
+  }
+  /* With JS: a tall scroll track pins the stage while the models wipe. */
+  .js-hero .hero-track { height: 400vh; }
+  .js-hero .hero-stage { position: sticky; top: 0; }
+
+  /* Soft, blurred copy of the artwork behind the frame: fills any leftover space on
+     screens that are not exactly 16:9, so there are never black bars. */
+  .hero-backdrop {
+    position: absolute;
+    inset: -48px;
+    will-change: transform;
+  }
+  .hero-backdrop img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(28px) brightness(0.62) saturate(1.05);
+    transition: opacity 0.3s linear;
+  }
+  .hero-backdrop img:not(.is-first) { opacity: 0; }
+
+  /* The frame keeps the artwork's exact 16:9 shape and always fits inside the screen:
+     whole image visible, never cropped, never stretched. */
+  .hero-frame {
+    width: min(100%, calc(100vh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    will-change: transform;
+  }
+  .hero-layer { object-fit: fill; }
+  .hero-layer:not(.is-first) {
+    /* right-to-left wipe: --w goes 0 -> 1 */
+    clip-path: inset(0 0 0 calc((1 - var(--w, 0)) * 100%));
+  }
+
+  /* Real links sitting exactly over the menu painted into the artwork. */
+  .hero-nav { position: absolute; inset: 0; z-index: 6; }
+  .hero-nav a { border-radius: 14px; outline-offset: -2px; }
+  .hero-nav a::after {
+    content: "";
+    position: absolute;
+    left: 18%; right: 18%; bottom: 6%;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+    box-shadow: 0 0 12px var(--gold);
+    opacity: 0;
+    transform: scaleX(0.4);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .hero-nav a:hover::after,
+  .hero-nav a:focus-visible::after { opacity: 1; transform: scaleX(1); }
+  .hero-nav a:focus-visible { outline: 2px solid var(--gold-soft); }
+  .hero-nav .hs-logo { border-radius: 50%; }
+  .hero-nav .hs-logo::after { display: none; }
+  .hero-nav .hs-logo:hover { box-shadow: 0 0 28px rgba(242, 182, 60, 0.55); }
+  .hero-nav.is-debug a { background: rgba(255, 0, 80, 0.3); outline: 1px solid #ff0050; }
+
+  /* Gold edge that travels with the wipe. */
+  .hero-wipe-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0;
+    width: 2px;
+    margin-left: -1px;
+    z-index: 4;
+    background: linear-gradient(180deg, transparent, var(--gold-soft) 18%, #fff 50%, var(--gold-soft) 82%, transparent);
+    box-shadow: 0 0 18px 2px rgba(242, 182, 60, 0.75);
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  /* Cursor hairline + glow. */
+  .hero-cursor {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .hero-cursor.is-on { opacity: 1; }
+  .hero-cursor-line {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(255, 215, 122, 0.55) 30%, rgba(255, 215, 122, 0.55) 70%, transparent);
+    will-change: transform;
+  }
+  .hero-cursor-glow {
+    position: absolute;
+    left: 0; top: 0;
+    width: 260px; height: 260px;
+    margin: -130px 0 0 -130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 122, 0.16), rgba(255, 215, 122, 0) 65%);
+    will-change: transform;
+  }
+
+  /* Current series pill. */
+  .hero-series {
+    position: absolute;
+    left: 3%; bottom: 5%;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 18px 9px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(5, 7, 13, 0.72);
+    backdrop-filter: blur(6px);
+    font-size: clamp(0.72rem, 0.9vw, 0.95rem);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .hero-series b { color: var(--gold); font-weight: 800; }
+  .hero-dots { display: flex; gap: 6px; }
+  .hero-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.28); transition: background 0.25s, box-shadow 0.25s; }
+  .hero-dots i.is-on { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  .hero-hint {
+    position: absolute;
+    left: 50%; bottom: 4%;
+    z-index: 5;
+    transform: translateX(-50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 1px 8px #000;
+    pointer-events: none;
+  }
+  .js-hero .hero-hint { display: flex; }
+  .hero-hint::after {
+    content: "";
+    width: 1px; height: 34px;
+    background: linear-gradient(180deg, var(--gold-soft), transparent);
+    animation: hint 1.8s ease-in-out infinite;
+    transform-origin: top;
+  }
+  @keyframes hint { 0%, 100% { transform: scaleY(0.35); opacity: 0.5; } 50% { transform: scaleY(1); opacity: 1; } }
+
+  /* Closing headline + CTA (revealed after the fourth model). */
+  .hero-scrim {
+    position: absolute;
+    inset: 17% 0 0 0; /* starts below the menu bar so the menu stays bright */
+    z-index: 3;
+    background:
+      radial-gradient(ellipse at 50% 38%, rgba(5, 7, 13, 0.55), rgba(5, 7, 13, 0) 75%),
+      linear-gradient(180deg, rgba(5, 7, 13, 0), rgba(5, 7, 13, 0.55) 22%, rgba(5, 7, 13, 0.72));
+    pointer-events: none;
+  }
+  .hero-headline {
+    position: absolute;
+    left: 0; right: 0;
+    top: 30%;
+    z-index: 5;
+    padding: 0 6%;
+    text-align: center;
+  }
+  .hero-title { font-size: clamp(2rem, 4.6vw, 4.6rem); text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7); }
+  .hero-sub { font-size: clamp(0.95rem, 1.25vw, 1.3rem); max-width: 46ch; margin-inline: auto; color: #e3e8f4; text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8); }
+  .hero-eyebrow { font-size: clamp(0.7rem, 0.85vw, 0.95rem); }
+
+  /* JS drives these; without JS the headline simply stays visible over model 1. */
+  .js-hero .hero-scrim { opacity: var(--h, 0); }
+  .js-hero .hero-headline {
+    opacity: var(--h, 0);
+    transform: translateY(calc((1 - var(--h, 0)) * 26px));
+    visibility: hidden;
+  }
+  .js-hero .hero-headline.is-live { visibility: visible; }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .hero-hint::after { animation: none; }
+  .hero-cursor { display: none; }
+}
+
+/* ---------- Next section: the four series ---------- */
+.series {
+  padding: clamp(56px, 8vw, 110px) clamp(16px, 5vw, 72px);
+  background: linear-gradient(180deg, var(--night), var(--navy) 40%, var(--night));
+}
+.series-head { max-width: 760px; margin: 0 auto clamp(28px, 4vw, 52px); text-align: center; }
+.series-head h2 { margin: 0 0 10px; font-size: clamp(1.7rem, 3.4vw, 2.8rem); font-weight: 800; line-height: 1.12; }
+.series-head h2 em { font-style: normal; color: var(--gold); }
+.series-head p { margin: 0; color: var(--ink-dim); }
+.series-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+@media (min-width: 640px) { .series-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1200px) { .series-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.series-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--navy-2);
+  text-decoration: none;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.series-card:hover { transform: translateY(-4px); border-color: var(--gold); box-shadow: 0 18px 50px rgba(242, 182, 60, 0.18); }
+.series-card:focus-visible { outline: 3px solid var(--gold-soft); outline-offset: 3px; }
+.series-pic { position: relative; aspect-ratio: 4 / 3; overflow: hidden; }
+.series-pic img {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 131%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center bottom;
+}
+.series-body { padding: 16px 20px 20px; }
+.series-body h3 { margin: 0 0 2px; font-size: 1.35rem; font-weight: 800; }
+.series-body p { margin: 0; color: var(--ink-dim); font-size: 0.92rem; }
+.series-more { display: inline-block; margin-top: 12px; color: var(--gold); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ---------- Footer ---------- */
+.foot {
+  padding: 36px clamp(16px, 5vw, 72px) 44px;
+  border-top: 1px solid var(--line);
+  background: var(--night);
+  text-align: center;
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+.foot-contact { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 28px; margin-bottom: 14px; font-weight: 700; color: var(--ink); }
+.foot-contact a { text-decoration: none; }
+.foot-contact a:hover { color: var(--gold); }
+.foot small { display: block; max-width: 70ch; margin: 0 auto; font-size: 0.78rem; opacity: 0.8; }
+
+/* ---------- Simple placeholder pages ---------- */
+.soon {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 20%, var(--navy-2), var(--night) 70%);
+}
+.soon img { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 22px; }
+.soon h1 { margin: 0 0 10px; font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 800; }
+.soon h1 em { font-style: normal; color: var(--gold); }
+.soon p { margin: 0 auto 26px; max-width: 44ch; color: var(--ink-dim); }
+.soon .back { display: inline-block; margin-top: 22px; color: var(--ink-dim); font-size: 0.9rem; }
