@@ -29,6 +29,30 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Desktop cursor: the miniature house, 40px wide, static. The numbers after the image are
+   the click point (the roof's top corner). Links, buttons and text fields keep their own
+   pointer / text cursors. */
+@media (min-width: 1024px) {
+  html {
+    cursor: url("/assets/img/cursor-house-40.png") 13 1, auto;
+    cursor: image-set(url("/assets/img/cursor-house-40.png") 1x, url("/assets/img/cursor-house-80.png") 2x) 13 1, auto;
+  }
+}
+
+/* Hero cube (desktop): four faces around a vertical axis, turned by scroll. */
+.hero-scene {
+  perspective: 180vw;
+}
+.hero-cube {
+  transform-style: preserve-3d;
+  transform: translateZ(calc(var(--half, 50vw) * -1)) rotateY(calc(var(--turn, 0) * -90deg));
+  will-change: transform;
+}
+.hero-face {
+  backface-visibility: hidden;
+  transform: rotateY(calc(var(--i) * 90deg)) translateZ(var(--half, 50vw));
+}
+
 /* Save / Print: only the computation, on white paper. */
 @media print {
   body {
@@ -36,7 +60,6 @@ html {
   }
   header,
   section[aria-label="PHirst house models"],
-  canvas,
   .print-hide {
     display: none !important;
   }

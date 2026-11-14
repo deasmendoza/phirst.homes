@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
 
 const MODELS = [
   { src: '/assets/img/hero/unna.webp', alt: 'Unna single-attached homes at night' },
@@ -19,8 +19,8 @@ const LINKS = [
   { label: 'Contact', href: '/contact/', left: 85.94, top: 1.2, width: 10.8, height: 12.2 },
 ];
 
-// Scroll progress (0..1) windows for the three wipes.
-const WIPES: [number, number][] = [
+// Scroll progress (0..1) windows for the three quarter-turns.
+const TURNS: [number, number][] = [
   [0.04, 0.32],
   [0.36, 0.64],
   [0.68, 0.96],
@@ -30,16 +30,17 @@ const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
  * Desktop (>=1024px): a tall scroll track pins a full-screen stage while the four
- * models wipe right-to-left, driven only by scroll position (no autoplay).
+ * models turn like the faces of a cube, driven only by scroll position (no autoplay).
  * Below 1024px: a single static image.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const cubeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!desktop || !track) return;
+    const cube = cubeRef.current;
+    if (!desktop || !track || !cube) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let raf = 0;
@@ -51,11 +52,11 @@ export function Hero({ desktop }: { desktop: boolean }) {
       target = total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 0;
     };
     const render = () => {
-      WIPES.forEach(([a, b], i) => {
-        const w = clamp((current - a) / (b - a));
-        layerRefs.current[i + 1]?.style.setProperty('--w', w.toFixed(4));
-      });
+      // 0 = model 1 facing front, 1 = model 2, 2 = model 3, 3 = model 4
+      const turn = TURNS.reduce((sum, [a, b]) => sum + clamp((current - a) / (b - a)), 0);
+      cube.style.setProperty('--turn', turn.toFixed(4));
     };
+    const size = () => cube.style.setProperty('--half', `${cube.offsetWidth / 2}px`);
     const tick = () => {
       raf = 0;
       current += (target - current) * (reduced.matches ? 1 : 0.16);
@@ -67,18 +68,21 @@ export function Hero({ desktop }: { desktop: boolean }) {
       read();
       if (!raf) raf = requestAnimationFrame(tick);
     };
+    const onResize = () => {
+      size();
+      onScroll();
+    };
 
+    size();
     read();
     current = target; // nothing moves on load
     render();
     window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    const layers = layerRefs.current;
+    window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       if (raf) cancelAnimationFrame(raf);
-      layers.forEach((l) => l?.style.removeProperty('--w'));
     };
   }, [desktop]);
 
@@ -86,35 +90,42 @@ export function Hero({ desktop }: { desktop: boolean }) {
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[400vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
-          {MODELS.map((m, i) => (
+          {desktop ? (
+            <div className="hero-scene absolute inset-0">
+              <div ref={cubeRef} className="hero-cube absolute inset-0">
+                {MODELS.map((m, i) => (
+                  <img
+                    key={m.src}
+                    src={m.src}
+                    alt={m.alt}
+                    width={1024}
+                    height={576}
+                    draggable={false}
+                    fetchPriority={i === 0 ? 'high' : 'auto'}
+                    style={{ '--i': i } as CSSProperties}
+                    // edge to edge, menu always visible, bottom may crop
+                    className="hero-face absolute inset-0 h-full w-full max-w-none select-none object-cover object-top"
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            // mobile: one still image, cropped so the menu painted into the artwork is hidden
             <img
-              key={m.src}
-              ref={(el) => {
-                layerRefs.current[i] = el;
-              }}
-              src={m.src}
-              alt={m.alt}
+              src={MODELS[0].src}
+              alt={MODELS[0].alt}
               width={1024}
               height={576}
               draggable={false}
-              loading={i === 0 ? 'eager' : 'lazy'}
-              fetchPriority={i === 0 ? 'high' : 'auto'}
-              style={i === 0 ? undefined : { clipPath: 'inset(0 0 0 calc((1 - var(--w, 0)) * 100%))' }}
-              className={[
-                'absolute left-0 w-full max-w-none select-none object-cover',
-                // mobile: crop away the menu painted into the top of the artwork
-                'bottom-0 h-[131%] object-bottom',
-                // desktop: edge to edge, menu always visible, bottom may crop
-                'lg:inset-0 lg:h-full lg:object-top',
-                i === 0 ? '' : 'hidden lg:block',
-              ].join(' ')}
+              fetchPriority="high"
+              className="absolute bottom-0 left-0 h-[131%] w-full max-w-none select-none object-cover object-bottom"
             />
-          ))}
+          )}
 
           {/* Matches the object-fit: cover / top-center box of the artwork exactly. */}
           <nav
             aria-label="Main"
-            className="absolute left-1/2 top-0 hidden aspect-video w-[max(100%,calc(100vh*16/9))] -translate-x-1/2 lg:block"
+            className="absolute left-1/2 top-0 z-10 hidden aspect-video w-[max(100%,calc(100vh*16/9))] -translate-x-1/2 lg:block"
           >
             {LINKS.map((l) => (
               <a
