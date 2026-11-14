@@ -1,0 +1,24 @@
+/* Only scan our own source: the legacy static pages in /public are not Tailwind. */
+@import "tailwindcss" source(none);
+@source "../src";
+@source "../components";
+
+@theme {
+  --color-night: #05070d;
+  --color-navy: #0a1224;
+  --color-gold: #f2b63c;
+  --font-sans: "Montserrat", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--color-night);
+  color: #fff;
+}
+
+/* ?hotspots=1 highlights the clickable areas over the painted menu. */
+.show-hotspots .hero-hotspot {
+  background: rgba(255, 0, 80, 0.3);
+  outline: 1px solid #ff0050;
+}
