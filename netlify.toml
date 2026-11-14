@@ -6,12 +6,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# The calculator now lives on the homepage.
-[[redirects]]
-  from = "/calculator/*"
-  to = "/#calculator"
-  status = 302
+# /calculator is the homepage, scrolled to the calculator (no "#" in the address).
 [[redirects]]
   from = "/calculator"
-  to = "/#calculator"
-  status = 302
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/calculator/"
+  to = "/index.html"
+  status = 200
