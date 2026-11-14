@@ -85,6 +85,8 @@ async function readTab(sheetId, gid) {
       unit.type = unit.type.toUpperCase();
       unit.status = unit.status.toUpperCase();
       unit.terms = unit.terms.toUpperCase();
+      // An empty date cell in the sheet comes through as "Jan 1900"; treat it as unknown.
+      if (/\b1900\b/.test(unit.turnover)) unit.turnover = '';
       return unit;
     })
     .filter((u) => u.code && u.tcp);
