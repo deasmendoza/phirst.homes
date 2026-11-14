@@ -9,9 +9,8 @@
 // Tabs of the spreadsheet (their names change daily with the date; these ids do not).
 const TABS = ['791045622', '1055632924', '1610931865', '418692951'];
 
-// Only these sales areas are sent to the browser (Cavite = SOMA1, Batangas = SOMA3).
-// Override with the INVENTORY_GEOS environment variable, e.g. "SOMA1,SOMA3,SOMA2".
-const DEFAULT_GEOS = ['SOMA1', 'SOMA3'];
+// Every sales area is sent by default. To limit it, set the INVENTORY_GEOS environment
+// variable to a comma-separated list, e.g. "SOMA1,SOMA3" for Cavite and Batangas only.
 
 const COLUMNS = {
   code: /^UNIT CODE$/,
@@ -116,14 +115,14 @@ export default async function handler() {
   const sheetId = process.env.INVENTORY_SHEET_ID;
   if (!sheetId) return json(503, { error: 'Inventory is not connected yet (INVENTORY_SHEET_ID is not set).' });
 
-  const geos = (process.env.INVENTORY_GEOS || DEFAULT_GEOS.join(','))
+  const geos = (process.env.INVENTORY_GEOS || '')
     .split(',')
     .map((g) => g.trim().toUpperCase())
     .filter(Boolean);
 
   try {
     const [asOf, ...tabs] = await Promise.all([readAsOf(sheetId), ...TABS.map((gid) => readTab(sheetId, gid))]);
-    const units = tabs.flat().filter((u) => geos.includes(u.geo));
+    const units = tabs.flat().filter((u) => !geos.length || geos.includes(u.geo));
     if (!units.length) throw new Error('no units found');
     return json(
       200,
