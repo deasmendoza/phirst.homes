@@ -1,16 +1,14 @@
 import { useEffect, useRef } from 'react';
 
-const VIDEO = '/assets/video/night-sky.mp4';
-const POSTER = '/assets/img/hero/night-poster.webp';
-
-// Transparent cut-outs: only the houses, their fences and front bushes.
+// Full-bleed renders, one per model. The menu that was painted into them has been
+// replaced by plain sky, because the menu below is real HTML.
 const MODELS = [
-  { src: '/assets/img/hero/house-1.webp', alt: 'Navy and amber PHirst townhouses with stone accents' },
-  { src: '/assets/img/hero/house-2.webp', alt: 'Blue-grey and white PHirst townhouses' },
-  { src: '/assets/img/hero/house-3.webp', alt: 'White and yellow PHirst rowhouses' },
-  { src: '/assets/img/hero/house-4.webp', alt: 'Single-attached PHirst homes' },
-  { src: '/assets/img/hero/house-5.webp', alt: 'Cartland, Charles and Christie PHirst homes' },
-  { src: '/assets/img/hero/house-6.webp', alt: 'Charles and Corin PHirst homes with balconies' },
+  { src: '/assets/img/hero/model-1.webp', alt: 'Navy and amber PHirst townhouses with stone accents at night' },
+  { src: '/assets/img/hero/model-2.webp', alt: 'Blue-grey and white PHirst townhouses at night' },
+  { src: '/assets/img/hero/model-3.webp', alt: 'White and yellow PHirst rowhouses at night' },
+  { src: '/assets/img/hero/model-4.webp', alt: 'Single-attached PHirst homes at night' },
+  { src: '/assets/img/hero/model-5.webp', alt: 'Cartland, Charles and Christie PHirst homes at night' },
+  { src: '/assets/img/hero/model-6.webp', alt: 'Charles and Corin PHirst homes with balconies at night' },
 ];
 
 const LINKS = [
@@ -22,47 +20,44 @@ const LINKS = [
   { label: 'Contact', href: '/contact/' },
 ];
 
-// Scroll progress (0..1) windows, one per wipe, with a short rest between them.
-const WIPES: [number, number][] = MODELS.slice(1).map((_, i, all) => {
+const SLICES = 4; // wedges, one every 90 degrees
+const WEDGE = 360 / SLICES;
+const CENTER = '50% 52%';
+const START_DEG = 30; // where the first wedge opens
+const TURN_DEG = 90; // how far the wedges rotate while they open
+
+const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+// Scroll progress (0..1) windows, one per reveal, with a short rest between them.
+const REVEALS: [number, number][] = MODELS.slice(1).map((_, i, all) => {
   const span = 1 / all.length;
   return [i * span + span * 0.1, (i + 1) * span - span * 0.1];
 });
 
-const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-
-// Both layers use the same box, so the houses always sit on the video's driveway.
-const FILL = 'absolute inset-0 h-full w-full max-w-none select-none object-cover object-center';
+/** Four wedges, each `open` degrees wide, starting at `from` degrees (0 = straight up, clockwise). */
+function wedgeMask(from: number, open: number) {
+  const stops: string[] = [];
+  for (let k = 0; k < SLICES; k++) {
+    const a = k * WEDGE;
+    stops.push(`#000 ${a}deg ${(a + open).toFixed(3)}deg`, `transparent ${(a + open).toFixed(3)}deg ${a + WEDGE}deg`);
+  }
+  return `conic-gradient(from ${from.toFixed(3)}deg at ${CENTER}, ${stops.join(', ')})`;
+}
 
 /**
- * Desktop (>=1024px): a tall scroll track pins a full-screen stage made of three layers:
- *   1. the looping night-sky video, which never moves,
- *   2. the six house cut-outs, stacked and stationary, revealed by a vertical split that
- *      scroll position moves right to left (no autoplay),
- *   3. the menu, which never moves.
- * Below 1024px: a still frame of the video with the first house.
+ * Desktop (>=1024px): a 600vh scroll track pins a 100vh stage. The six renders are stacked in
+ * the same spot and never move. Scrolling reveals the next one through four "pizza slices"
+ * around the centre of the screen that widen and rotate until they close the full circle
+ * (a conic-gradient mask), with hairlines on the slice edges. Scrolling up reverses it.
+ * Nothing plays by itself.
+ * Below 1024px: the first model only.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const linesRef = useRef<HTMLDivElement>(null);
 
-  // Layer 1: the video plays on its own, unless the visitor asked for reduced motion.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!desktop || !video) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => {
-      video.muted = true;
-      if (reduced.matches) video.pause();
-      else video.play().catch(() => {});
-    };
-    sync();
-    reduced.addEventListener('change', sync);
-    return () => reduced.removeEventListener('change', sync);
-  }, [desktop]);
-
-  // Layer 2: scroll position drives the wipes.
   useEffect(() => {
     const track = trackRef.current;
     if (!desktop || !track) return;
@@ -76,26 +71,40 @@ export function Hero({ desktop }: { desktop: boolean }) {
       const total = track.offsetHeight - window.innerHeight;
       target = total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 0;
     };
-    const render = () => {
-      let split = -1; // progress of the reveal that is under way, if any
-      WIPES.forEach(([a, b], i) => {
+    const draw = () => {
+      let live = -1; // progress of the reveal that is under way, if any
+      REVEALS.forEach(([a, b], i) => {
         const w = clamp((current - a) / (b - a));
-        if (w > 0 && w < 1) split = w;
-        layerRefs.current[i]?.style.setProperty('--out', w.toFixed(4)); // the house being covered
-        layerRefs.current[i + 1]?.style.setProperty('--in', w.toFixed(4)); // the house being revealed
+        const layer = layerRefs.current[i + 1];
+        if (!layer) return;
+        if (w <= 0) {
+          layer.style.visibility = 'hidden';
+        } else {
+          const mask = w >= 1 ? 'none' : wedgeMask(START_DEG + w * TURN_DEG, w * WEDGE);
+          layer.style.visibility = 'visible';
+          layer.style.maskImage = mask;
+          layer.style.setProperty('-webkit-mask-image', mask);
+          if (w < 1) live = w;
+        }
       });
-      // The hairline rides the split boundary and is hidden while a house is at rest.
-      const line = lineRef.current;
-      if (line) {
-        line.style.opacity = split < 0 ? '0' : '1';
-        if (split >= 0) line.style.left = `${((1 - split) * 100).toFixed(3)}%`;
+
+      // Hairlines on the slice edges. Opposite wedges share an edge, so each line runs through
+      // the centre: two on the leading edges, two on the trailing edges.
+      const lines = linesRef.current;
+      if (lines) lines.style.opacity = live < 0 ? '0' : '1';
+      if (live >= 0) {
+        const from = START_DEG + live * TURN_DEG;
+        [from, from + WEDGE, from + live * WEDGE, from + WEDGE + live * WEDGE].forEach((deg, k) => {
+          const line = lineRefs.current[k];
+          if (line) line.style.rotate = `${deg.toFixed(3)}deg`;
+        });
       }
     };
     const tick = () => {
       raf = 0;
-      current += (target - current) * (reduced.matches ? 1 : 0.16);
+      current += (target - current) * (reduced.matches ? 1 : 0.2);
       if (Math.abs(target - current) < 0.0004) current = target;
-      render();
+      draw();
       if (current !== target) raf = requestAnimationFrame(tick);
     };
     const onScroll = () => {
@@ -105,7 +114,7 @@ export function Hero({ desktop }: { desktop: boolean }) {
 
     read();
     current = target; // nothing moves on load
-    render();
+    draw();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
     return () => {
@@ -119,70 +128,50 @@ export function Hero({ desktop }: { desktop: boolean }) {
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[600vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
-          {/* Layer 1: night sky, never wipes */}
-          {desktop ? (
-            <video
-              ref={videoRef}
-              src={VIDEO}
-              poster={POSTER}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-              tabIndex={-1}
-              className={`${FILL} z-[1]`}
+          {/* The six renders, stacked in the same place. A later one is only ever masked. */}
+          {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
+            <img
+              key={m.src}
+              ref={(el) => {
+                layerRefs.current[i] = el;
+              }}
+              src={m.src}
+              alt={m.alt}
+              width={1672}
+              height={941}
+              draggable={false}
+              fetchPriority={i === 0 ? 'high' : 'low'}
+              style={{ zIndex: i + 1, visibility: desktop && i > 0 ? 'hidden' : undefined }}
+              className="absolute inset-0 h-full w-full max-w-none select-none object-cover object-top"
             />
-          ) : (
-            <img src={POSTER} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
-          )}
+          ))}
 
-          {/* Layer 2: the houses, stacked in the same spot and never moved. A vertical split travels
-              right to left: the next house shows on its right, the current one on its left. */}
-          <div className="absolute inset-0 z-[2]">
-            {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
-              <img
-                key={m.src}
-                ref={(el) => {
-                  layerRefs.current[i] = el;
-                }}
-                src={m.src}
-                alt={m.alt}
-                width={1672}
-                height={941}
-                draggable={false}
-                fetchPriority={i === 0 ? 'high' : 'low'}
-                style={
-                  desktop
-                    ? { clipPath: `inset(0 calc(var(--out, 0) * 100%) 0 calc((1 - var(--in, ${i === 0 ? 1 : 0})) * 100%))` }
-                    : undefined
-                }
-                className={FILL}
-              />
-            ))}
-          </div>
-
-          {/* The split boundary: a 1px hairline with a soft glow, moved by the same scroll progress. */}
+          {/* Slice-edge hairlines, kept below the menu. */}
           {desktop && (
             <div
-              ref={lineRef}
+              ref={linesRef}
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 z-[3] w-px -translate-x-1/2 bg-white/45 opacity-0 shadow-[0_0_10px_1px_rgba(255,255,255,0.35)]"
-            />
+              className="pointer-events-none absolute inset-0 z-10 opacity-0 [clip-path:inset(88px_0_0_0)]"
+            >
+              {[0, 1, 2, 3].map((k) => (
+                <div
+                  key={k}
+                  ref={(el) => {
+                    lineRefs.current[k] = el;
+                  }}
+                  className="hero-slice-line"
+                />
+              ))}
+            </div>
           )}
 
-          {/* Layer 3: the menu, never wipes. Sizes follow the screen width like the artwork did. */}
+          {/* The menu, above the hairlines. Sizes follow the screen width. */}
           <nav
             aria-label="Main"
             className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-20 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
           >
             {LINKS.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}
-              >
+              <a key={l.label} href={l.href} className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}>
                 {l.label}
               </a>
             ))}
