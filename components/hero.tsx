@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const VIDEO = '/assets/video/night-sky.mp4';
-const POSTER = '/assets/img/hero/night-poster.webp';
+const SKY = '/assets/img/hero/night-scene.webp';
 
 // Transparent cut-outs: only the houses, their fences and front bushes.
 const MODELS = [
@@ -30,37 +29,21 @@ const WIPES: [number, number][] = MODELS.slice(1).map((_, i, all) => {
 
 const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-// Both layers use the same box, so the houses always sit on the video's driveway.
+// Both layers use the same box, so the houses always sit on the scene's driveway.
 const FILL = 'absolute inset-0 h-full w-full max-w-none select-none object-cover object-center';
 
 /**
  * Desktop (>=1024px): a tall scroll track pins a full-screen stage made of three layers:
- *   1. the looping night-sky video, which never moves,
+ *   1. the still night scene (sky, trees, lamps, driveway), which never moves,
  *   2. the six house cut-outs, stacked and stationary, revealed by a vertical split that
  *      scroll position moves right to left (no autoplay),
  *   3. the menu, which never moves.
- * Below 1024px: a still frame of the video with the first house.
+ * Below 1024px: the night scene with the first house.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
   const lineRef = useRef<HTMLDivElement>(null);
-
-  // Layer 1: the video plays on its own, unless the visitor asked for reduced motion.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!desktop || !video) return;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => {
-      video.muted = true;
-      if (reduced.matches) video.pause();
-      else video.play().catch(() => {});
-    };
-    sync();
-    reduced.addEventListener('change', sync);
-    return () => reduced.removeEventListener('change', sync);
-  }, [desktop]);
 
   // Layer 2: scroll position drives the wipes.
   useEffect(() => {
@@ -119,24 +102,8 @@ export function Hero({ desktop }: { desktop: boolean }) {
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[600vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
-          {/* Layer 1: night sky, never wipes */}
-          {desktop ? (
-            <video
-              ref={videoRef}
-              src={VIDEO}
-              poster={POSTER}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-              tabIndex={-1}
-              className={`${FILL} z-[1]`}
-            />
-          ) : (
-            <img src={POSTER} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
-          )}
+          {/* Layer 1: the night scene, a still image that never moves */}
+          <img src={SKY} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
 
           {/* Layer 2: the houses, stacked in the same spot and never moved. A vertical split travels
               right to left: the next house shows on its right, the current one on its left. */}
