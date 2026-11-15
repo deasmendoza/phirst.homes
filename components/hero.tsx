@@ -36,7 +36,8 @@ const FILL = 'absolute inset-0 h-full w-full max-w-none select-none object-cover
 /**
  * Desktop (>=1024px): a tall scroll track pins a full-screen stage made of three layers:
  *   1. the looping night-sky video, which never moves,
- *   2. the six house cut-outs, wiped right-to-left by scroll position only (no autoplay),
+ *   2. the six house cut-outs, stacked and stationary, revealed by a vertical split that
+ *      scroll position moves right to left (no autoplay),
  *   3. the menu, which never moves.
  * Below 1024px: a still frame of the video with the first house.
  */
@@ -44,6 +45,7 @@ export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const lineRef = useRef<HTMLDivElement>(null);
 
   // Layer 1: the video plays on its own, unless the visitor asked for reduced motion.
   useEffect(() => {
@@ -75,11 +77,19 @@ export function Hero({ desktop }: { desktop: boolean }) {
       target = total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 0;
     };
     const render = () => {
+      let split = -1; // progress of the reveal that is under way, if any
       WIPES.forEach(([a, b], i) => {
-        const w = clamp((current - a) / (b - a)).toFixed(4);
-        layerRefs.current[i]?.style.setProperty('--out', w); // the house being covered
-        layerRefs.current[i + 1]?.style.setProperty('--in', w); // the house being revealed
+        const w = clamp((current - a) / (b - a));
+        if (w > 0 && w < 1) split = w;
+        layerRefs.current[i]?.style.setProperty('--out', w.toFixed(4)); // the house being covered
+        layerRefs.current[i + 1]?.style.setProperty('--in', w.toFixed(4)); // the house being revealed
       });
+      // The hairline rides the split boundary and is hidden while a house is at rest.
+      const line = lineRef.current;
+      if (line) {
+        line.style.opacity = split < 0 ? '0' : '1';
+        if (split >= 0) line.style.left = `${((1 - split) * 100).toFixed(3)}%`;
+      }
     };
     const tick = () => {
       raf = 0;
@@ -128,8 +138,8 @@ export function Hero({ desktop }: { desktop: boolean }) {
             <img src={POSTER} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
           )}
 
-          {/* Layer 2: the houses. Each one is revealed from the right edge towards the left
-              while the one before it is cut away along the same line. */}
+          {/* Layer 2: the houses, stacked in the same spot and never moved. A vertical split travels
+              right to left: the next house shows on its right, the current one on its left. */}
           <div className="absolute inset-0 z-[2]">
             {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
               <img
@@ -153,10 +163,19 @@ export function Hero({ desktop }: { desktop: boolean }) {
             ))}
           </div>
 
+          {/* The split boundary: a 1px hairline with a soft glow, moved by the same scroll progress. */}
+          {desktop && (
+            <div
+              ref={lineRef}
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 z-[3] w-px -translate-x-1/2 bg-white/45 opacity-0 shadow-[0_0_10px_1px_rgba(255,255,255,0.35)]"
+            />
+          )}
+
           {/* Layer 3: the menu, never wipes. Sizes follow the screen width like the artwork did. */}
           <nav
             aria-label="Main"
-            className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-10 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
+            className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-20 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
           >
             {LINKS.map((l) => (
               <a
