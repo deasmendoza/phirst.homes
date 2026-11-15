@@ -19,10 +19,37 @@ body {
   color: #fff;
 }
 
-/* ?hotspots=1 highlights the clickable areas over the painted menu. */
-.show-hotspots .hero-hotspot {
-  background: rgba(255, 0, 80, 0.3);
-  outline: 1px solid #ff0050;
+/* Hero menu pills (desktop): thin gold outline on translucent night blue; the first one is solid gold. */
+.hero-pill {
+  padding: 0.5em 1.4em;
+  border: 1.5px solid #d9a94a;
+  border-radius: 999px;
+  background: rgba(6, 10, 26, 0.55);
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  backdrop-filter: blur(3px);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.hero-pill:hover {
+  border-color: var(--color-gold-soft);
+  background: rgba(242, 182, 60, 0.18);
+}
+.hero-pill:focus-visible {
+  outline: 2px solid var(--color-gold-soft);
+  outline-offset: 3px;
+}
+.hero-pill--primary,
+.hero-pill--primary:hover {
+  border-color: transparent;
+  background: linear-gradient(100deg, #c2933a 0%, #ecca7c 42%, #e3bb63 62%, #c79a3f 100%);
+  color: #171c3a;
+  font-weight: 700;
+  backdrop-filter: none;
+}
+.hero-pill--primary:hover {
+  filter: brightness(1.08);
 }
 
 html {
