@@ -11,14 +11,6 @@ const MODELS = [
   { src: '/assets/img/hero/model-6.webp', alt: 'Charles and Corin PHirst homes with balconies at night' },
 ];
 
-const LINKS = [
-  { label: 'House Models', href: '/house-models/', primary: true },
-  { label: 'Locations', href: '/locations' },
-  { label: 'Calculator', href: '/calculator' },
-  { label: 'Careers', href: '/careers/' },
-  { label: 'Book a Viewing', href: '/contact/' },
-  { label: 'Contact', href: '/contact/' },
-];
 
 const SLICES = 4; // wedges, one every 90 degrees
 const WEDGE = 360 / SLICES;
@@ -164,18 +156,6 @@ export function Hero({ desktop }: { desktop: boolean }) {
               ))}
             </div>
           )}
-
-          {/* The menu, above the hairlines. Sizes follow the screen width. */}
-          <nav
-            aria-label="Main"
-            className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-20 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
-          >
-            {LINKS.map((l) => (
-              <a key={l.label} href={l.href} className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}>
-                {l.label}
-              </a>
-            ))}
-          </nav>
         </div>
       </div>
     </section>

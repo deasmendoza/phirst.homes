@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { CalculatorBackdrop } from '@/components/calculator-backdrop';
 import { Select, type Option } from '@/components/ui/select';
 import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
@@ -16,8 +17,6 @@ import {
   type Unit,
 } from '@/lib/inventory';
 
-const PHONE = '0917 651 0110';
-const PHONE_HREF = 'tel:+639176510110';
 const EMAIL = 'm@phirst.homes';
 
 const peso = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -242,12 +241,8 @@ export function Calculator() {
     : null;
 
   return (
-    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden bg-navy px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:py-9">
-      {/* Night render fading in from the left, as in the design. */}
-      <div className="print-hide pointer-events-none absolute inset-y-0 left-0 -z-10 hidden w-[46%] overflow-hidden lg:block" aria-hidden="true">
-        <img src="/assets/img/hero/model-4.webp" alt="" loading="lazy" className="absolute bottom-0 left-0 h-[131%] w-full max-w-none object-cover object-[12%_100%] opacity-40" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,18,36,0.2),#0a1224_96%),linear-gradient(180deg,#0a1224,transparent_24%,transparent_72%,#0a1224)]" />
-      </div>
+    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden bg-navy px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:pb-9 lg:pt-[88px]">
+      <CalculatorBackdrop />
 
       <div className="mx-auto grid w-full max-w-[1480px] items-stretch gap-6 lg:grid-cols-[minmax(410px,460px)_minmax(0,1fr)]">
         {/* ---------- Inputs ---------- */}
@@ -361,8 +356,7 @@ export function Calculator() {
 
           {status === 'error' && (
             <Notice icon="nounit" title="Inventory is unavailable right now" tone="red">
-              We could not load the list of available units. Please try again in a few minutes, or call{' '}
-              <a className="font-semibold text-gold" href={PHONE_HREF}>{PHONE}</a>.
+              We could not load the list of available units. Please try again in a few minutes.
             </Notice>
           )}
 
@@ -512,18 +506,11 @@ export function Calculator() {
         </div>
       </div>
 
-      <div className="mx-auto mt-6 grid w-full max-w-[1480px] gap-5 text-white lg:grid-cols-[minmax(410px,460px)_minmax(0,1fr)]">
-        <div className="hidden lg:block" />
-        <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-          <a href={PHONE_HREF} className="flex items-center gap-2.5 font-semibold hover:text-gold"><Icon name="phone" /> {PHONE}</a>
-          <a href={`mailto:${EMAIL}`} className="flex items-center gap-2.5 font-semibold hover:text-gold"><Icon name="mail" /> {EMAIL}</a>
-          <ul className="list-disc space-y-0.5 border-white/25 pl-5 text-[13px] text-white/80 xl:ml-auto xl:border-l xl:pl-9">
-            <li>Sample computation only. Prices and terms are subject to change without prior notice.</li>
-            <li>Reservation fee is non-refundable and non-transferable.</li>
-            <li>Monthly amortization is an estimate based on indicative interest rates.</li>
-          </ul>
-        </div>
-      </div>
+      <ul className="mx-auto mt-5 flex w-full max-w-[1480px] flex-wrap justify-center gap-x-7 gap-y-1 text-center text-[13px] text-white/75">
+        <li>Sample computation only. Prices and terms are subject to change without prior notice.</li>
+        <li>Reservation fee is non-refundable and non-transferable.</li>
+        <li>Monthly amortization is an estimate based on indicative interest rates.</li>
+      </ul>
     </section>
   );
 }

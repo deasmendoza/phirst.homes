@@ -73,7 +73,7 @@ export function Locations() {
   };
 
   return (
-    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden bg-night px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:py-10">
+    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden bg-night px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-10 lg:pt-[92px]">
       {/* Contour-line texture, kept faint: it only adds depth behind the map and the cards */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[#070b16]" aria-hidden="true">
         <img src="/assets/img/locations-bg.webp" alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.22]" />

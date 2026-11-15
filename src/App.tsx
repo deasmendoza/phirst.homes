@@ -3,6 +3,7 @@ import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
 import { Locations } from '@/components/locations';
+import { SiteNav } from '@/components/site-nav';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -64,6 +65,7 @@ export default function App() {
   return (
     <>
       <MobileHeader />
+      <SiteNav />
       <main>
         <Hero desktop={desktop} />
         <Locations />
