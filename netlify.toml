@@ -25,3 +25,13 @@
   from = "/locations/"
   to = "/index.html"
   status = 200
+
+# /careers is the homepage, scrolled to the Careers section.
+[[redirects]]
+  from = "/careers"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/careers/"
+  to = "/index.html"
+  status = 200

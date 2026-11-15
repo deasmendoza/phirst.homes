@@ -2,7 +2,7 @@ const LINKS = [
   ['House Models', '/house-models/'],
   ['Locations', '/locations'],
   ['Calculator', '/calculator'],
-  ['Careers', '/careers/'],
+  ['Careers', '/careers'],
   ['Contact', '/contact/'],
   ['Book a Viewing', '/contact/'],
 ];

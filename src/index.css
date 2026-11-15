@@ -85,6 +85,8 @@ html {
   }
   header,
   section[aria-label="PHirst house models"],
+  #locations,
+  #careers,
   .print-hide {
     display: none !important;
   }

@@ -4,7 +4,7 @@ const LINKS = [
   { label: 'House Models', href: '/house-models/', section: 'hero' },
   { label: 'Locations', href: '/locations', section: 'locations' },
   { label: 'Calculator', href: '/calculator', section: 'calculator' },
-  { label: 'Careers', href: '/careers/' },
+  { label: 'Careers', href: '/careers', section: 'careers' },
   { label: 'Book a Viewing', href: '/contact/' },
   { label: 'Contact', href: '/contact/' },
 ];
@@ -24,7 +24,7 @@ export function SiteNav() {
       // The section whose top has most recently passed under the bar.
       const line = 96;
       let current = 'hero';
-      for (const id of ['locations', 'calculator']) {
+      for (const id of ['locations', 'calculator', 'careers']) {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top <= line) current = id;
       }
