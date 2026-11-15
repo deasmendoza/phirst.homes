@@ -39,20 +39,6 @@ html {
   }
 }
 
-/* Hero cube (desktop): four faces around a vertical axis, turned by scroll. */
-.hero-scene {
-  perspective: 180vw;
-}
-.hero-cube {
-  transform-style: preserve-3d;
-  transform: translateZ(calc(var(--half, 50vw) * -1)) rotateY(calc(var(--turn, 0) * -90deg));
-  will-change: transform;
-}
-.hero-face {
-  backface-visibility: hidden;
-  transform: rotateY(calc(var(--i) * 90deg)) translateZ(var(--half, 50vw));
-}
-
 /* Save / Print: only the computation, on white paper. */
 @media print {
   body {
