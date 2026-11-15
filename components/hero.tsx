@@ -10,7 +10,6 @@ const MODELS = [
   { src: '/assets/img/hero/model-5.webp', alt: 'Cartland, Charles and Christie PHirst homes at night' },
   { src: '/assets/img/hero/model-6.webp', alt: 'Charles and Corin PHirst homes with balconies at night' },
 ];
-const LAST = MODELS.length - 1;
 
 const LINKS = [
   { label: 'House Models', href: '/house-models/', primary: true },
@@ -21,147 +20,106 @@ const LINKS = [
   { label: 'Contact', href: '/contact/' },
 ];
 
-const HOLD_MS = 1800; // rest on each house
-const WIPE_MS = 1700; // one full reveal
-const RESUME_MS = 2500; // wait this long after the last scroll or drag before playing again
+const SLICES = 4; // wedges, one every 90 degrees
+const WEDGE = 360 / SLICES;
+const CENTER = '50% 52%';
+const START_DEG = 30; // where the first wedge opens
+const TURN_DEG = 90; // how far the wedges rotate while they open
 
-const clamp = (v: number, lo = 0, hi = 1) => (v < lo ? lo : v > hi ? hi : v);
-const ease = (x: number) => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
+const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/** Scroll progress through the track (0..1) -> position in the sequence (0..LAST), with a rest on each house. */
-function sequenceAt(progress: number) {
-  const span = 1 / LAST;
-  let pos = 0;
-  for (let i = 0; i < LAST; i++) pos += clamp((progress - (i + 0.1) * span) / (0.8 * span));
-  return pos;
+// Scroll progress (0..1) windows, one per reveal, with a short rest between them.
+const REVEALS: [number, number][] = MODELS.slice(1).map((_, i, all) => {
+  const span = 1 / all.length;
+  return [i * span + span * 0.1, (i + 1) * span - span * 0.1];
+});
+
+/** Four wedges, each `open` degrees wide, starting at `from` degrees (0 = straight up, clockwise). */
+function wedgeMask(from: number, open: number) {
+  const stops: string[] = [];
+  for (let k = 0; k < SLICES; k++) {
+    const a = k * WEDGE;
+    stops.push(`#000 ${a}deg ${(a + open).toFixed(3)}deg`, `transparent ${(a + open).toFixed(3)}deg ${a + WEDGE}deg`);
+  }
+  return `conic-gradient(from ${from.toFixed(3)}deg at ${CENTER}, ${stops.join(', ')})`;
 }
 
 /**
  * Desktop (>=1024px): a 600vh scroll track pins a 100vh stage. The six renders are stacked in
- * the same spot and never move; the next one is revealed by cutting it from the left edge
- * (clip-path only), with a 1px line on the cut.
- * `pos` (0..5) says where the sequence is: 2.25 = model 3 with model 4 a quarter revealed.
- *   - Left alone, it plays by itself: reveal, rest, reveal ... to the last house, then back.
- *   - Scrolling or dragging sideways takes over, and it resumes a moment after you stop.
+ * the same spot and never move. Scrolling reveals the next one through four "pizza slices"
+ * around the centre of the screen that widen and rotate until they close the full circle
+ * (a conic-gradient mask), with hairlines on the slice edges. Scrolling up reverses it.
+ * Nothing plays by itself.
  * Below 1024px: the first model only.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
   const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
-  const lineRef = useRef<HTMLDivElement>(null);
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const linesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const track = trackRef.current;
-    const stage = stageRef.current;
-    if (!desktop || !track || !stage) return;
+    if (!desktop || !track) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let raf = 0;
-    let visible = true;
-    let pos = 0; // what is on screen
-    let goal = 0; // where scrolling / dragging wants it
-    let manualAt = -Infinity; // time of the last scroll or drag
-    let dir = 1; // autoplay direction
-    let leg: { from: number; to: number; start: number; ms: number } | null = null;
-    let restUntil = performance.now() + HOLD_MS;
-    let drag: { x: number; pos: number; id: number } | null = null;
+    let target = 0;
+    let current = 0;
 
-    const draw = () => {
-      for (let i = 1; i <= LAST; i++) {
-        const cut = (1 - clamp(pos - (i - 1))) * 100; // 100% -> 0%
-        const layer = layerRefs.current[i];
-        if (layer) layer.style.clipPath = `inset(0 0 0 ${cut.toFixed(3)}%)`;
-      }
-      const part = pos - Math.floor(pos);
-      const line = lineRef.current;
-      if (line) {
-        const moving = part > 0.0005 && part < 0.9995;
-        line.style.opacity = moving ? '1' : '0';
-        if (moving) line.style.left = `${((1 - part) * 100).toFixed(3)}%`;
-      }
-    };
-
-    const frame = (now: number) => {
-      raf = 0;
-      const manual = drag !== null || now - manualAt < RESUME_MS;
-      if (manual) {
-        pos += (goal - pos) * 0.22;
-        if (Math.abs(goal - pos) < 0.0005) pos = goal;
-        leg = null;
-        restUntil = now;
-      } else if (!reduced.matches) {
-        if (!leg && now >= restUntil) {
-          if (pos >= LAST) dir = -1;
-          else if (pos <= 0) dir = 1;
-          const next = dir > 0 ? Math.floor(pos + 1e-6) + 1 : Math.ceil(pos - 1e-6) - 1;
-          leg = { from: pos, to: clamp(next, 0, LAST), start: now, ms: WIPE_MS * Math.max(0.35, Math.abs(next - pos)) };
-        }
-        if (leg) {
-          const k = clamp((now - leg.start) / leg.ms);
-          pos = leg.from + (leg.to - leg.from) * ease(k);
-          if (k >= 1) {
-            pos = leg.to;
-            leg = null;
-            restUntil = now + HOLD_MS;
-          }
-        }
-        goal = pos;
-      }
-      draw();
-      if (visible) raf = requestAnimationFrame(frame);
-    };
-    const wake = () => {
-      if (!raf && visible) raf = requestAnimationFrame(frame);
-    };
-
-    // Scrolling takes over, and the sequence follows the scroll position.
-    const onScroll = () => {
+    const read = () => {
       const total = track.offsetHeight - window.innerHeight;
-      if (total <= 0) return;
-      goal = sequenceAt(clamp(-track.getBoundingClientRect().top / total));
-      manualAt = performance.now();
-      wake();
+      target = total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 0;
+    };
+    const draw = () => {
+      let live = -1; // progress of the reveal that is under way, if any
+      REVEALS.forEach(([a, b], i) => {
+        const w = clamp((current - a) / (b - a));
+        const layer = layerRefs.current[i + 1];
+        if (!layer) return;
+        if (w <= 0) {
+          layer.style.visibility = 'hidden';
+        } else {
+          const mask = w >= 1 ? 'none' : wedgeMask(START_DEG + w * TURN_DEG, w * WEDGE);
+          layer.style.visibility = 'visible';
+          layer.style.maskImage = mask;
+          layer.style.setProperty('-webkit-mask-image', mask);
+          if (w < 1) live = w;
+        }
+      });
+
+      // Hairlines on the slice edges. Opposite wedges share an edge, so each line runs through
+      // the centre: two on the leading edges, two on the trailing edges.
+      const lines = linesRef.current;
+      if (lines) lines.style.opacity = live < 0 ? '0' : '1';
+      if (live >= 0) {
+        const from = START_DEG + live * TURN_DEG;
+        [from, from + WEDGE, from + live * WEDGE, from + WEDGE + live * WEDGE].forEach((deg, k) => {
+          const line = lineRefs.current[k];
+          if (line) line.style.rotate = `${deg.toFixed(3)}deg`;
+        });
+      }
+    };
+    const tick = () => {
+      raf = 0;
+      current += (target - current) * (reduced.matches ? 1 : 0.2);
+      if (Math.abs(target - current) < 0.0004) current = target;
+      draw();
+      if (current !== target) raf = requestAnimationFrame(tick);
+    };
+    const onScroll = () => {
+      read();
+      if (!raf) raf = requestAnimationFrame(tick);
     };
 
-    // Dragging sideways moves the cut with the pointer: one screen width = one house.
-    const onDown = (e: PointerEvent) => {
-      if (e.button !== 0 || (e.target as Element).closest('a')) return;
-      drag = { x: e.clientX, pos, id: e.pointerId };
-      goal = pos;
-      stage.setPointerCapture(e.pointerId);
-    };
-    const onMove = (e: PointerEvent) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      goal = clamp(drag.pos - (e.clientX - drag.x) / stage.offsetWidth, 0, LAST);
-      wake();
-    };
-    const onUp = (e: PointerEvent) => {
-      if (!drag || e.pointerId !== drag.id) return;
-      drag = null;
-      manualAt = performance.now();
-    };
-
-    const seen = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      wake();
-    });
-    seen.observe(stage);
-
+    read();
+    current = target; // nothing moves on load
     draw();
-    wake();
     window.addEventListener('scroll', onScroll, { passive: true });
-    stage.addEventListener('pointerdown', onDown);
-    stage.addEventListener('pointermove', onMove);
-    stage.addEventListener('pointerup', onUp);
-    stage.addEventListener('pointercancel', onUp);
+    window.addEventListener('resize', onScroll);
     return () => {
-      seen.disconnect();
       window.removeEventListener('scroll', onScroll);
-      stage.removeEventListener('pointerdown', onDown);
-      stage.removeEventListener('pointermove', onMove);
-      stage.removeEventListener('pointerup', onUp);
-      stage.removeEventListener('pointercancel', onUp);
+      window.removeEventListener('resize', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [desktop]);
@@ -169,11 +127,8 @@ export function Hero({ desktop }: { desktop: boolean }) {
   return (
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[600vh]">
-        <div
-          ref={stageRef}
-          className="relative aspect-[4/3] w-full touch-pan-y overflow-hidden select-none sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen"
-        >
-          {/* The six renders, stacked in the same place. A later one is only ever cut from its left edge. */}
+        <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
+          {/* The six renders, stacked in the same place. A later one is only ever masked. */}
           {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
             <img
               key={m.src}
@@ -186,27 +141,37 @@ export function Hero({ desktop }: { desktop: boolean }) {
               height={941}
               draggable={false}
               fetchPriority={i === 0 ? 'high' : 'low'}
-              style={{ zIndex: i + 1, clipPath: desktop && i > 0 ? 'inset(0 0 0 100%)' : undefined }}
-              className="absolute inset-0 h-full w-full max-w-none object-cover object-top"
+              style={{ zIndex: i + 1, visibility: desktop && i > 0 ? 'hidden' : undefined }}
+              className="absolute inset-0 h-full w-full max-w-none select-none object-cover object-top"
             />
           ))}
 
-          {/* The cut line, from just below the menu to the bottom. */}
+          {/* Slice-edge hairlines, kept below the menu. */}
           {desktop && (
             <div
-              ref={lineRef}
+              ref={linesRef}
               aria-hidden="true"
-              className="pointer-events-none absolute bottom-0 top-[90px] z-10 w-px bg-white/75 opacity-0 shadow-[0_0_8px_rgba(255,255,255,0.5)]"
-            />
+              className="pointer-events-none absolute inset-0 z-10 opacity-0 [clip-path:inset(88px_0_0_0)]"
+            >
+              {[0, 1, 2, 3].map((k) => (
+                <div
+                  key={k}
+                  ref={(el) => {
+                    lineRefs.current[k] = el;
+                  }}
+                  className="hero-slice-line"
+                />
+              ))}
+            </div>
           )}
 
-          {/* The menu, above the cut line. Sizes follow the screen width. */}
+          {/* The menu, above the hairlines. Sizes follow the screen width. */}
           <nav
             aria-label="Main"
             className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-20 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
           >
             {LINKS.map((l) => (
-              <a key={l.label} href={l.href} draggable={false} className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}>
+              <a key={l.label} href={l.href} className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}>
                 {l.label}
               </a>
             ))}
