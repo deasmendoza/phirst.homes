@@ -395,7 +395,7 @@ export function Calculator() {
               <div className="mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
                 <div className="relative h-[118px] w-[200px] overflow-hidden rounded-lg border border-white/15 bg-[#101b33]">
                   {seriesImage(result.unit.type) ? (
-                    <img src={seriesImage(result.unit.type)!} alt="" className="absolute inset-0 h-full w-full scale-[1.9] object-contain" />
+                    <img src={seriesImage(result.unit.type)!} alt="" className="absolute inset-0 h-full w-full origin-[50%_62%] scale-[1.6] object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center text-white/40"><Icon name="home" className="size-12" /></div>
                   )}

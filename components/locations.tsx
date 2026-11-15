@@ -76,8 +76,8 @@ export function Locations() {
     <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden bg-night px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:py-10">
       {/* Night sky behind everything */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <img src="/assets/img/hero/night-poster.webp" alt="" loading="lazy" className="h-full w-full object-cover object-top opacity-50" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#05070d,rgba(5,7,13,0.55)_18%,rgba(5,7,13,0.78)_70%,#0a1224)]" />
+        <img src="/assets/img/hero/model-1.webp" alt="" loading="lazy" className="h-full w-full object-cover object-top opacity-45" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,#05070d,rgba(5,7,13,0.5)_18%,rgba(5,7,13,0.86)_62%,#0a1224)]" />
       </div>
 
       <div className="mx-auto grid w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
