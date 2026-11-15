@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
+import { Locations } from '@/components/locations';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -17,7 +18,7 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/calculator': 'calculator' };
+const SECTIONS: Record<string, string> = { '/locations': 'locations', '/calculator': 'calculator' };
 const normalize = (path: string) => path.replace(/\/+$/, '') || '/';
 
 function scrollToPath(path: string, behavior: ScrollBehavior) {
@@ -65,6 +66,7 @@ export default function App() {
       <MobileHeader />
       <main>
         <Hero desktop={desktop} />
+        <Locations />
         <Calculator />
       </main>
     </>

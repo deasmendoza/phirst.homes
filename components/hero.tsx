@@ -15,7 +15,7 @@ const MODELS = [
 
 const LINKS = [
   { label: 'House Models', href: '/house-models/', primary: true },
-  { label: 'Locations', href: '/locations/' },
+  { label: 'Locations', href: '/locations' },
   { label: 'Calculator', href: '/calculator' },
   { label: 'Careers', href: '/careers/' },
   { label: 'Book a Viewing', href: '/contact/' },
