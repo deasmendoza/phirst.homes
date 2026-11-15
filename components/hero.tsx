@@ -1,26 +1,26 @@
 import { useEffect, useRef } from 'react';
 
+const VIDEO = '/assets/video/night-sky.mp4';
+const POSTER = '/assets/img/hero/night-poster.webp';
+
+// Transparent cut-outs: only the houses, their fences and front bushes.
 const MODELS = [
-  { src: '/assets/img/hero/model-1.webp', alt: 'Navy and amber PHirst townhouses with stone accents at night' },
-  { src: '/assets/img/hero/model-2.webp', alt: 'Blue-grey and white PHirst townhouses at night' },
-  { src: '/assets/img/hero/model-3.webp', alt: 'White and yellow PHirst rowhouses at night' },
-  { src: '/assets/img/hero/model-4.webp', alt: 'Single-attached PHirst homes at night' },
-  { src: '/assets/img/hero/model-5.webp', alt: 'Cartland, Charles and Christie PHirst homes at night' },
-  { src: '/assets/img/hero/model-6.webp', alt: 'Charles and Corin PHirst homes with balconies at night' },
+  { src: '/assets/img/hero/house-1.webp', alt: 'Navy and amber PHirst townhouses with stone accents' },
+  { src: '/assets/img/hero/house-2.webp', alt: 'Blue-grey and white PHirst townhouses' },
+  { src: '/assets/img/hero/house-3.webp', alt: 'White and yellow PHirst rowhouses' },
+  { src: '/assets/img/hero/house-4.webp', alt: 'Single-attached PHirst homes' },
+  { src: '/assets/img/hero/house-5.webp', alt: 'Cartland, Charles and Christie PHirst homes' },
+  { src: '/assets/img/hero/house-6.webp', alt: 'Charles and Corin PHirst homes with balconies' },
 ];
 
-// Real links placed over the six pill buttons painted into the artwork.
-// Positions are percentages of the 1672x941 image, so they follow it at any size.
 const LINKS = [
-  { label: 'House Models', href: '/house-models/', left: 11.96, width: 14.42 },
-  { label: 'Locations', href: '/locations/', left: 27.39, width: 11.01 },
-  { label: 'Calculator', href: '/calculator', left: 39.41, width: 11.78 },
-  { label: 'Careers', href: '/careers/', left: 52.27, width: 10.17 },
-  { label: 'Book a Viewing', href: '/contact/', left: 63.46, width: 14.77 },
-  { label: 'Contact', href: '/contact/', left: 79.31, width: 9.63 },
+  { label: 'House Models', href: '/house-models/', primary: true },
+  { label: 'Locations', href: '/locations/' },
+  { label: 'Calculator', href: '/calculator' },
+  { label: 'Careers', href: '/careers/' },
+  { label: 'Book a Viewing', href: '/contact/' },
+  { label: 'Contact', href: '/contact/' },
 ];
-const PILL_TOP = 2.55;
-const PILL_HEIGHT = 6.5;
 
 // Scroll progress (0..1) windows, one per wipe, with a short rest between them.
 const WIPES: [number, number][] = MODELS.slice(1).map((_, i, all) => {
@@ -30,15 +30,37 @@ const WIPES: [number, number][] = MODELS.slice(1).map((_, i, all) => {
 
 const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
+// Both layers use the same box, so the houses always sit on the video's driveway.
+const FILL = 'absolute inset-0 h-full w-full max-w-none select-none object-cover object-center';
+
 /**
- * Desktop (>=1024px): a tall scroll track pins a full-screen stage while the six
- * models wipe right-to-left, driven only by scroll position (no autoplay).
- * Below 1024px: a single static image.
+ * Desktop (>=1024px): a tall scroll track pins a full-screen stage made of three layers:
+ *   1. the looping night-sky video, which never moves,
+ *   2. the six house cut-outs, wiped right-to-left by scroll position only (no autoplay),
+ *   3. the menu, which never moves.
+ * Below 1024px: a still frame of the video with the first house.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
 
+  // Layer 1: the video plays on its own, unless the visitor asked for reduced motion.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!desktop || !video) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => {
+      video.muted = true;
+      if (reduced.matches) video.pause();
+      else video.play().catch(() => {});
+    };
+    sync();
+    reduced.addEventListener('change', sync);
+    return () => reduced.removeEventListener('change', sync);
+  }, [desktop]);
+
+  // Layer 2: scroll position drives the wipes.
   useEffect(() => {
     const track = trackRef.current;
     if (!desktop || !track) return;
@@ -54,8 +76,9 @@ export function Hero({ desktop }: { desktop: boolean }) {
     };
     const render = () => {
       WIPES.forEach(([a, b], i) => {
-        const w = clamp((current - a) / (b - a));
-        layerRefs.current[i + 1]?.style.setProperty('--w', w.toFixed(4));
+        const w = clamp((current - a) / (b - a)).toFixed(4);
+        layerRefs.current[i]?.style.setProperty('--out', w); // the house being covered
+        layerRefs.current[i + 1]?.style.setProperty('--in', w); // the house being revealed
       });
     };
     const tick = () => {
@@ -86,43 +109,62 @@ export function Hero({ desktop }: { desktop: boolean }) {
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[600vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
-          {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
-            <img
-              key={m.src}
-              ref={(el) => {
-                layerRefs.current[i] = el;
-              }}
-              src={m.src}
-              alt={m.alt}
-              width={1672}
-              height={941}
-              draggable={false}
-              fetchPriority={i === 0 ? 'high' : 'low'}
-              // each later model is revealed from the right edge towards the left
-              style={i === 0 ? undefined : { clipPath: 'inset(0 0 0 calc((1 - var(--w, 0)) * 100%))' }}
-              className={
-                desktop
-                  ? // edge to edge, menu always visible, bottom may crop
-                    'absolute inset-0 h-full w-full max-w-none select-none object-cover object-top'
-                  : // mobile: cropped so the menu painted into the artwork is hidden
-                    'absolute bottom-0 left-0 h-[114%] w-full max-w-none select-none object-cover object-bottom'
-              }
+          {/* Layer 1: night sky, never wipes */}
+          {desktop ? (
+            <video
+              ref={videoRef}
+              src={VIDEO}
+              poster={POSTER}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-hidden="true"
+              tabIndex={-1}
+              className={`${FILL} z-[1]`}
             />
-          ))}
+          ) : (
+            <img src={POSTER} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
+          )}
 
-          {/* Matches the object-fit: cover / top-center box of the artwork exactly. */}
+          {/* Layer 2: the houses. Each one is revealed from the right edge towards the left
+              while the one before it is cut away along the same line. */}
+          <div className="absolute inset-0 z-[2]">
+            {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
+              <img
+                key={m.src}
+                ref={(el) => {
+                  layerRefs.current[i] = el;
+                }}
+                src={m.src}
+                alt={m.alt}
+                width={1672}
+                height={941}
+                draggable={false}
+                fetchPriority={i === 0 ? 'high' : 'low'}
+                style={
+                  desktop
+                    ? { clipPath: `inset(0 calc(var(--out, 0) * 100%) 0 calc((1 - var(--in, ${i === 0 ? 1 : 0})) * 100%))` }
+                    : undefined
+                }
+                className={FILL}
+              />
+            ))}
+          </div>
+
+          {/* Layer 3: the menu, never wipes. Sizes follow the screen width like the artwork did. */}
           <nav
             aria-label="Main"
-            className="absolute left-1/2 top-0 z-10 hidden aspect-[1672/941] w-[max(100%,calc(100vh*1672/941))] -translate-x-1/2 lg:block"
+            className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-10 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
           >
             {LINKS.map((l) => (
               <a
                 key={l.label}
                 href={l.href}
-                style={{ left: `${l.left}%`, top: `${PILL_TOP}%`, width: `${l.width}%`, height: `${PILL_HEIGHT}%` }}
-                className="hero-hotspot absolute block rounded-full outline-offset-2 focus-visible:outline-2 focus-visible:outline-gold"
+                className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}
               >
-                <span className="sr-only">{l.label}</span>
+                {l.label}
               </a>
             ))}
           </nav>
