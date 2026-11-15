@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-const SKY = '/assets/img/hero/night-scene.webp';
+// The still night scene (sky, moon, trees, lamps, driveway) behind every house.
+const SCENE = '/assets/img/hero/night-scene.webp';
 
 // Transparent cut-outs: only the houses, their fences and front bushes.
 const MODELS = [
@@ -21,73 +22,55 @@ const LINKS = [
   { label: 'Contact', href: '/contact/' },
 ];
 
-// Scroll progress (0..1) windows, one per wipe, with a short rest between them.
-const WIPES: [number, number][] = MODELS.slice(1).map((_, i, all) => {
+// Scroll progress (0..1) windows, one per reveal, with a short rest between them.
+const REVEALS: [number, number][] = MODELS.slice(1).map((_, i, all) => {
   const span = 1 / all.length;
   return [i * span + span * 0.1, (i + 1) * span - span * 0.1];
 });
 
 const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-// Both layers use the same box, so the houses always sit on the scene's driveway.
-const FILL = 'absolute inset-0 h-full w-full max-w-none select-none object-cover object-center';
-
 /**
- * Desktop (>=1024px): a tall scroll track pins a full-screen stage made of three layers:
- *   1. the still night scene (sky, trees, lamps, driveway), which never moves,
- *   2. the six house cut-outs, stacked and stationary, revealed by a vertical split that
- *      scroll position moves right to left (no autoplay),
- *   3. the menu, which never moves.
- * Below 1024px: the night scene with the first house.
+ * Desktop (>=1024px): a 600vh scroll track pins a 100vh stage. The six models are stacked
+ * in the same spot and never move. Scrolling moves a vertical cut from the right edge to
+ * the left edge of the next model (clip-path only), with a 1px hairline on the cut.
+ * Nothing plays by itself: the cut sits exactly where the scroll position puts it.
+ * Below 1024px: the first model only.
  */
 export function Hero({ desktop }: { desktop: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
-  const layerRefs = useRef<(HTMLImageElement | null)[]>([]);
+  const layerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const lineRef = useRef<HTMLDivElement>(null);
 
-  // Layer 2: scroll position drives the wipes.
   useEffect(() => {
     const track = trackRef.current;
     if (!desktop || !track) return;
-
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
     let raf = 0;
-    let target = 0;
-    let current = 0;
 
-    const read = () => {
-      const total = track.offsetHeight - window.innerHeight;
-      target = total > 0 ? clamp(-track.getBoundingClientRect().top / total) : 0;
-    };
     const render = () => {
-      let split = -1; // progress of the reveal that is under way, if any
-      WIPES.forEach(([a, b], i) => {
-        const w = clamp((current - a) / (b - a));
-        if (w > 0 && w < 1) split = w;
-        layerRefs.current[i]?.style.setProperty('--out', w.toFixed(4)); // the house being covered
-        layerRefs.current[i + 1]?.style.setProperty('--in', w.toFixed(4)); // the house being revealed
+      raf = 0;
+      const total = track.offsetHeight - window.innerHeight;
+      const top = track.getBoundingClientRect().top + window.scrollY;
+      const progress = total > 0 ? clamp((window.scrollY - top) / total) : 0;
+
+      let cutLine = -1; // where the cut is, in % from the left, while a reveal is under way
+      REVEALS.forEach(([a, b], i) => {
+        const cut = (1 - clamp((progress - a) / (b - a))) * 100; // 100% -> 0%
+        const layer = layerRefs.current[i + 1];
+        if (layer) layer.style.clipPath = `inset(0 0 0 ${cut.toFixed(3)}%)`;
+        if (cut > 0 && cut < 100) cutLine = cut;
       });
-      // The hairline rides the split boundary and is hidden while a house is at rest.
+
       const line = lineRef.current;
       if (line) {
-        line.style.opacity = split < 0 ? '0' : '1';
-        if (split >= 0) line.style.left = `${((1 - split) * 100).toFixed(3)}%`;
+        line.style.opacity = cutLine < 0 ? '0' : '1';
+        if (cutLine >= 0) line.style.left = `${cutLine.toFixed(3)}%`;
       }
     };
-    const tick = () => {
-      raf = 0;
-      current += (target - current) * (reduced.matches ? 1 : 0.16);
-      if (Math.abs(target - current) < 0.0004) current = target;
-      render();
-      if (current !== target) raf = requestAnimationFrame(tick);
-    };
     const onScroll = () => {
-      read();
-      if (!raf) raf = requestAnimationFrame(tick);
+      if (!raf) raf = requestAnimationFrame(render);
     };
 
-    read();
-    current = target; // nothing moves on load
     render();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
@@ -102,54 +85,49 @@ export function Hero({ desktop }: { desktop: boolean }) {
     <section aria-label="PHirst house models" className="bg-night">
       <div ref={trackRef} className="lg:h-[600vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
-          {/* Layer 1: the night scene, a still image that never moves */}
-          <img src={SKY} alt="" width={1920} height={1080} draggable={false} fetchPriority="high" className={`${FILL} z-[1]`} />
-
-          {/* Layer 2: the houses, stacked in the same spot and never moved. A vertical split travels
-              right to left: the next house shows on its right, the current one on its left. */}
-          <div className="absolute inset-0 z-[2]">
-            {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
+          {/* One full-screen layer per model: the night scene with the house on it. All six sit
+              in the same place; a later layer is only ever cut, from its left edge. */}
+          {(desktop ? MODELS : MODELS.slice(0, 1)).map((m, i) => (
+            <div
+              key={m.src}
+              ref={(el) => {
+                layerRefs.current[i] = el;
+              }}
+              className="absolute inset-0 h-full w-full bg-cover bg-center"
+              style={{
+                zIndex: i + 1,
+                backgroundImage: `url(${SCENE})`,
+                clipPath: desktop && i > 0 ? 'inset(0 0 0 100%)' : undefined,
+              }}
+            >
               <img
-                key={m.src}
-                ref={(el) => {
-                  layerRefs.current[i] = el;
-                }}
                 src={m.src}
                 alt={m.alt}
                 width={1672}
                 height={941}
                 draggable={false}
                 fetchPriority={i === 0 ? 'high' : 'low'}
-                style={
-                  desktop
-                    ? { clipPath: `inset(0 calc(var(--out, 0) * 100%) 0 calc((1 - var(--in, ${i === 0 ? 1 : 0})) * 100%))` }
-                    : undefined
-                }
-                className={FILL}
+                className="absolute inset-0 h-full w-full max-w-none select-none object-cover object-center"
               />
-            ))}
-          </div>
+            </div>
+          ))}
 
-          {/* The split boundary: a 1px hairline with a soft glow, moved by the same scroll progress. */}
+          {/* The cut line: 1px, soft glow, placed by the same scroll progress. */}
           {desktop && (
             <div
               ref={lineRef}
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 z-[3] w-px -translate-x-1/2 bg-white/45 opacity-0 shadow-[0_0_10px_1px_rgba(255,255,255,0.35)]"
+              className="pointer-events-none absolute inset-y-0 z-10 w-px bg-white/45 opacity-0 shadow-[0_0_10px_1px_rgba(255,255,255,0.35)]"
             />
           )}
 
-          {/* Layer 3: the menu, never wipes. Sizes follow the screen width like the artwork did. */}
+          {/* The menu, above the cut line. Sizes follow the screen width. */}
           <nav
             aria-label="Main"
             className="absolute inset-x-0 top-[clamp(14px,1.6vw,30px)] z-20 hidden items-center justify-center gap-[0.85em] text-[clamp(13px,1.45vw,26px)] leading-[1.2] lg:flex"
           >
             {LINKS.map((l) => (
-              <a
-                key={l.label}
-                href={l.href}
-                className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}
-              >
+              <a key={l.label} href={l.href} className={`hero-pill ${l.primary ? 'hero-pill--primary' : ''}`}>
                 {l.label}
               </a>
             ))}
