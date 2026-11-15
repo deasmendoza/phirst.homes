@@ -29,13 +29,13 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Desktop cursor: the miniature house, 40px wide, static. The numbers after the image are
-   the click point (the roof's top corner). Links, buttons and text fields keep their own
+/* Desktop cursor: the round PH badge, 32px, static. The numbers after the image are the
+   click point (the centre of the badge). Links, buttons and text fields keep their own
    pointer / text cursors. */
 @media (min-width: 1024px) {
   html {
-    cursor: url("/assets/img/cursor-house-40.png") 13 1, auto;
-    cursor: image-set(url("/assets/img/cursor-house-40.png") 1x, url("/assets/img/cursor-house-80.png") 2x) 13 1, auto;
+    cursor: url("/assets/img/cursor-logo-32.png") 16 16, auto;
+    cursor: image-set(url("/assets/img/cursor-logo-32.png") 1x, url("/assets/img/cursor-logo-64.png") 2x) 16 16, auto;
   }
 }
 
