@@ -1,125 +1,144 @@
-import { useState } from 'react';
+// Careers: a split-screen recruitment section. Everything except the portrait is real
+// text and real buttons, so it stays sharp, readable and editable.
 
 const MESSAGE =
   "Hi! I'm interested in joining the M-BigTime team as a Territory Specialist. I would like to know more about the recruitment process and requirements.";
 
-// Messenger: m.me accepts a ?text= draft for some accounts and ignores it for others,
-// so the same message is also offered below as a one-tap copy.
+// m.me carries the draft message for accounts that support it and ignores it otherwise.
 const MESSENGER = `https://m.me/marielle.medina.16?text=${encodeURIComponent(MESSAGE)}`;
 const VIBER = 'viber://chat?number=%2B639692860316';
-const VIBER_NUMBER = '+63 969 286 0316';
-const EMAIL = 'careers@phirst.homes';
-const MAILTO = `mailto:${EMAIL}?subject=${encodeURIComponent('Territory Specialist — Team M-BigTime')}&body=${encodeURIComponent(`${MESSAGE}\n\nName:\nMobile number:\nLocation:`)}`;
+const MAILTO = `mailto:careers@phirst.homes?subject=${encodeURIComponent('Territory Specialist — Team M-BigTime')}&body=${encodeURIComponent(`${MESSAGE}\n\nName:\nMobile number:\nLocation:`)}`;
 
-const POSTER_ALT =
-  "We're hiring. Join My Team M-BigTime as a Territory Specialist, ₱22,000 per month monthly compensation. " +
-  "Initial documentary requirements, Tranche 1: Seller's Accreditation Form provided by PHirst Homes; NBI Clearance or Police Clearance; " +
-  'Transcript of Records or Certificate of Grades with at least 72 units; open and enroll a CBS Savings Account. ' +
-  'Additional requirements may apply to succeeding tranches.';
+const REQUIREMENTS: [string, string?][] = [
+  ["Seller's Accreditation Form", 'Provided by PHirst Homes'],
+  ['NBI Clearance / Police Clearance'],
+  ['Transcript of Records (TOR) / Certificate of Grades', 'At least 72 units'],
+  ['Open and Enroll CBS Savings Account'],
+];
 
-function Contact({ href, label, detail, external, children }: { href: string; label: string; detail: string; external?: boolean; children: React.ReactNode }) {
-  return (
-    <a
-      href={href}
-      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-      className="group flex items-center gap-3.5 rounded-xl border border-gold/60 bg-[#0a1120]/90 px-4 py-3 text-left text-white transition hover:border-gold-soft hover:bg-[#101b33] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-soft"
-    >
-      <span className="grid size-11 shrink-0 place-items-center rounded-full">{children}</span>
-      <span className="min-w-0">
-        <span className="block text-[16px] font-bold leading-tight">{label}</span>
-        <span className="block truncate text-[13px] text-white/70">{detail}</span>
-      </span>
-    </a>
-  );
-}
+const CHAMPAGNE = '#e7cf9b';
 
 export function Careers() {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(MESSAGE);
-    } catch {
-      // Older browsers and non-secure pages: fall back to a temporary text field.
-      const field = document.createElement('textarea');
-      field.value = MESSAGE;
-      field.style.position = 'fixed';
-      field.style.opacity = '0';
-      document.body.appendChild(field);
-      field.select();
-      document.execCommand('copy');
-      field.remove();
-    }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2500);
-  };
-
   return (
     <section
       id="careers"
       aria-labelledby="careers-title"
-      className="relative isolate overflow-hidden bg-[radial-gradient(ellipse_at_50%_0%,#101b33,#0a1224_45%,#05070d)] px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-12 lg:pt-[92px]"
+      className="relative isolate overflow-hidden bg-[#070a13] px-5 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4.5vw,96px)] lg:pb-10 lg:pt-[84px]"
     >
-      <div className="mx-auto w-full max-w-[900px]">
-        <div className="text-center">
-          <p className="text-[13px] font-semibold tracking-[0.42em] text-white/85">CAREERS</p>
-          <h2 id="careers-title" className="mt-1 font-serif text-[32px] font-semibold leading-tight text-white xl:text-[40px]">
-            Join Team <span className="text-gold">M-BigTime</span>
+      {/* Architectural backdrop: a faint drafting grid, a soft light behind the portrait, and fades into the neighbouring sections */}
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+        <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#e7cf9b_1px,transparent_1px),linear-gradient(90deg,#e7cf9b_1px,transparent_1px)] [background-size:88px_88px]" />
+        <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(#e7cf9b_1px,transparent_1px),linear-gradient(90deg,#e7cf9b_1px,transparent_1px)] [background-size:22px_22px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_22%_48%,rgba(231,207,155,0.16),transparent_46%),radial-gradient(ellipse_at_78%_40%,rgba(16,27,51,0.9),transparent_70%),linear-gradient(180deg,#05070d,rgba(7,10,19,0)_18%,rgba(7,10,19,0)_84%,#05070d)]" />
+      </div>
+
+      <div className="mx-auto grid w-full max-w-[1760px] items-center gap-10 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:gap-[clamp(40px,5vw,110px)]">
+        {/* ---------- Portrait ---------- */}
+        <div className="relative mx-auto w-full max-w-[340px] lg:max-w-none">
+          <div className="relative mx-auto aspect-[2/3] w-full lg:h-[min(76vh,760px)] lg:w-auto">
+            {/* offset gold outline behind the frame */}
+            <div className="absolute -bottom-4 -right-4 left-6 top-6 rounded-[28px] border border-[#e7cf9b]/45" aria-hidden="true" />
+            <div className="relative h-full overflow-hidden rounded-[28px] border border-[#e7cf9b]/80 shadow-[0_30px_90px_rgba(0,0,0,0.65),0_0_60px_rgba(231,207,155,0.12)]">
+              <img src="/assets/img/careers-manager.webp" alt="Marielle Medina, Team Manager of Team M-BigTime, holding a model house" loading="lazy" className="h-full w-full object-cover object-[50%_18%]" />
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- Recruitment content ---------- */}
+        <div className="min-w-0">
+          <p className="text-[12px] font-semibold tracking-[0.44em] text-white/75">CAREERS AT PHIRST HOMES</p>
+
+          <div className="mt-3 inline-block bg-[linear-gradient(100deg,#c2933a,#ecca7c_45%,#c79a3f)] px-5 py-1.5 [clip-path:polygon(0_0,100%_0,calc(100%-14px)_100%,0_100%)]">
+            <span className="text-[clamp(16px,1.35vw,24px)] font-extrabold tracking-[0.14em] text-[#14100a]">WE’RE HIRING!</span>
+          </div>
+
+          <h2 id="careers-title" className="mt-3 font-serif text-[clamp(34px,4.1vw,76px)] font-semibold leading-[1.04] text-white">
+            Join My Team <em className="whitespace-nowrap text-[#e7cf9b]">M-BigTime</em>
           </h2>
-        </div>
 
-        {/* The recruitment poster itself, whole and uncropped */}
-        <img
-          src="/assets/img/careers-poster.png"
-          alt={POSTER_ALT}
-          width={689}
-          height={355}
-          loading="lazy"
-          className="mx-auto mt-5 block h-auto w-full rounded-2xl border border-gold/50 shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
-        />
+          <dl className="mt-5 flex flex-wrap items-stretch gap-x-10 gap-y-4">
+            <div className="flex items-center gap-4">
+              <span className="grid size-12 shrink-0 place-items-center rounded-full border border-[#e7cf9b]/70 text-[#e7cf9b]">
+                <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3.5" y="7.5" width="17" height="12" rx="2" /><path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5M3.5 13h17" />
+                </svg>
+              </span>
+              <div>
+                <dt className="text-[11px] font-semibold tracking-[0.26em] text-white/60">POSITION</dt>
+                <dd className="text-[clamp(20px,1.75vw,30px)] font-bold leading-tight text-white">Territory Specialist</dd>
+              </div>
+            </div>
+            <div className="border-white/20 lg:border-l lg:pl-10">
+              <dt className="text-[11px] font-semibold tracking-[0.26em] text-white/60">MONTHLY COMPENSATION</dt>
+              <dd className="text-[clamp(22px,2vw,36px)] font-extrabold leading-tight text-[#e7cf9b]">
+                ₱22,000 <span className="text-[0.62em] font-semibold text-white/85">/ month</span>
+              </dd>
+            </div>
+          </dl>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <Contact href={MESSENGER} label="Message on Messenger" detail="Marielle Medina" external>
-            <svg viewBox="0 0 48 48" className="size-11" aria-hidden="true">
-              <defs>
-                <linearGradient id="msgr" x1="0" y1="1" x2="1" y2="0">
-                  <stop offset="0" stopColor="#0a7cff" /><stop offset="0.5" stopColor="#a033ff" /><stop offset="1" stopColor="#ff5c87" />
-                </linearGradient>
-              </defs>
-              <path fill="url(#msgr)" d="M24 4C12.7 4 4 12.3 4 23.4c0 5.8 2.4 10.8 6.3 14.300.300.300.500.700.5 1.2l.1 3.5c0 1.1 1.2 1.9 2.2 1.4l4-1.7c.3-.200.7-.2 1.1-.1 1.800.5 3.800.8 5.800.8 11.3 0 20-8.3 20-19.4S35.3 4 24 4Z" />
-              <path fill="#fff" d="m12 29.1 5.9-9.3c.9-1.5 2.9-1.9 4.3-.8l4.7 3.5c.400.3 1 .3 1.4 0l6.3-4.8c.8-.6 1.900.4 1.4 1.3l-5.9 9.3c-.9 1.5-2.9 1.9-4.300.8l-4.7-3.5c-.4-.3-1-.3-1.4 0l-6.3 4.8c-.800.6-1.9-.4-1.4-1.3Z" />
-            </svg>
-          </Contact>
-          <Contact href={VIBER} label="Chat on Viber" detail={VIBER_NUMBER}>
-            <svg viewBox="0 0 48 48" className="size-11" aria-hidden="true">
-              <rect x="4" y="4" width="40" height="40" rx="12" fill="#7360f2" />
-              <path fill="#fff" d="M31.7 27.3c-.9-.5-1.9-1.1-2.7-1.7-.8-.5-1.7-.3-2.200.4l-.9 1.1c-.300.4-.800.5-1.200.3-3-1.3-5.2-3.5-6.4-6.5-.2-.4-.1-.900.3-1.2l1-.8c.7-.600.9-1.500.4-2.3-.6-.9-1.2-1.8-1.8-2.7-.5-.7-1.3-1-2.1-.7-1.600.7-2.8 2.2-2.5 4 .100.600.3 1.200.6 1.8 2.9 6.3 7.5 10.8 13.9 13.600.500.2 1.100.4 1.600.5 1.800.3 3.4-1 4-2.600.3-.8 0-1.6-.8-2.1-.4-.4-.8-.7-1.2-1.1ZM24.6 12.2c5.500.2 10 4.6 10.2 10.1 0 .600.900.600.9 0-.2-6-5.1-10.8-11.1-11-.6 0-.600.9 0 .9Zm.3 2.6c3.900.3 7 3.3 7.3 7.2 0 .6 1 .500.9-.1-.3-4.4-3.8-7.8-8.2-8.1-.6 0-.600.9 0 1Zm.2 2.7c2.500.2 4.4 2.1 4.6 4.5 0 .6 1 .500.9-.1-.2-2.9-2.5-5.2-5.4-5.4-.6 0-.700.9-.1 1Z" />
-            </svg>
-          </Contact>
-          <Contact href={MAILTO} label="Email Recruitment Team" detail={EMAIL}>
-            <svg viewBox="0 0 48 48" className="size-11 text-gold" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="7" y="12" width="34" height="24" rx="4" />
-              <path d="m8.5 14.5 15.5 12 15.5-12" />
-            </svg>
-          </Contact>
-        </div>
-
-        {/* Messenger may not carry the draft message, so it can be copied in one tap */}
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-white/20 bg-[#0a1120]/80 px-4 py-3.5 sm:flex-row sm:items-center">
-          <p className="text-[14px] leading-relaxed text-white/85">
-            <span className="mb-0.5 block text-[12px] font-semibold tracking-[0.2em] text-gold">MESSAGE TO SEND</span>
-            “{MESSAGE}”
+          {/* Requirements */}
+          <div className="mt-6 rounded-2xl border border-[#e7cf9b]/55 bg-[linear-gradient(180deg,rgba(16,27,51,0.72),rgba(7,10,19,0.72))] px-5 py-4 backdrop-blur-sm xl:px-7">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7cf9b]/25 pb-3">
+              <h3 className="text-[clamp(13px,1.05vw,17px)] font-bold tracking-[0.2em] text-[#e7cf9b]">INITIAL DOCUMENTARY REQUIREMENTS</h3>
+              <span className="rounded-full bg-[linear-gradient(180deg,#f1dcaa,#d6b56e)] px-3.5 py-1 text-[11px] font-extrabold tracking-[0.18em] text-[#14100a]">TRANCHE 1</span>
+            </div>
+            <ol className="mt-3 grid gap-x-10 gap-y-3 xl:grid-cols-2">
+              {REQUIREMENTS.map(([title, note], i) => (
+                <li key={title} className="flex items-start gap-3.5">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(180deg,#f1dcaa,#c9a55c)] text-[15px] font-extrabold text-[#14100a]">{i + 1}</span>
+                  <span className="pt-0.5 text-[clamp(14px,1.05vw,17px)] font-semibold leading-snug text-white">
+                    {title}
+                    {note && <span className="block text-[0.82em] font-normal text-white/65">{note}</span>}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <p className="mt-2.5 max-w-[92ch] text-[12px] leading-relaxed text-white/55">
+            The requirements shown are for Tranche 1 only. Additional documentary requirements may apply to succeeding tranches, subject to applicable company guidelines.
           </p>
-          <button
-            type="button"
-            onClick={copy}
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[linear-gradient(180deg,#ffd77a,#f2b63c_55%,#c98a1a)] px-5 text-[15px] font-bold text-[#14100a] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:ml-auto"
-          >
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {copied ? <path d="m5 12.5 4.5 4.5L19 7.5" /> : <><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 0 1 2-2h9" /></>}
-            </svg>
-            <span aria-live="polite">{copied ? 'Copied' : 'Copy message'}</span>
-          </button>
+
+          {/* Message */}
+          <div className="mt-5 border-l-2 border-[#e7cf9b]/70 pl-5">
+            <p className="font-serif text-[clamp(20px,1.9vw,32px)] font-semibold italic leading-tight" style={{ color: CHAMPAGNE }}>
+              Are you ready to be part of something big?
+            </p>
+            <p className="mt-1 text-[clamp(14px,1.05vw,17px)] text-white/85">Grow with us and help Filipino families find their dream homes.</p>
+          </div>
+
+          {/* Contact */}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a
+              href={MESSENGER}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-[54px] items-center gap-3 rounded-xl bg-[linear-gradient(180deg,#f1dcaa,#e0bf78_55%,#c39a4a)] px-6 text-[16px] font-bold text-[#14100a] shadow-[0_10px_30px_rgba(231,207,155,0.22)] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              <svg viewBox="0 0 48 48" className="size-7" aria-hidden="true">
+                <path fill="#14100a" d="M24 4C12.7 4 4 12.3 4 23.4c0 5.8 2.4 10.8 6.3 14.3.3.3.5.7.5 1.2l.1 3.5c0 1.1 1.2 1.9 2.2 1.4l4-1.7c.3-.2.7-.2 1.1-.1 1.800.5 3.800.8 5.800.8 11.3 0 20-8.3 20-19.4S35.3 4 24 4Z" />
+                <path fill="#f1dcaa" d="m12 29.1 5.9-9.3c.9-1.5 2.9-1.9 4.3-.8l4.7 3.5c.4.3 1 .3 1.4 0l6.3-4.8c.8-.6 1.900.4 1.4 1.3l-5.9 9.3c-.9 1.5-2.9 1.9-4.300.8l-4.7-3.5c-.4-.3-1-.3-1.4 0l-6.3 4.8c-.8.6-1.9-.4-1.4-1.3Z" />
+              </svg>
+              Message Me on Messenger
+            </a>
+            <a
+              href={VIBER}
+              className="inline-flex h-[54px] items-center gap-3 rounded-xl border border-[#e7cf9b]/70 bg-[#0a1120]/80 px-6 text-[16px] font-bold text-white transition hover:border-[#f1dcaa] hover:bg-[#101b33] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f1dcaa]"
+            >
+              <svg viewBox="0 0 24 24" className="size-6 text-[#b9a7ff]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2Z" /><path d="M14.5 4.2a6 6 0 0 1 5.3 5.3M14.2 7.3a3 3 0 0 1 2.5 2.5" />
+              </svg>
+              Chat on Viber
+            </a>
+            <a
+              href={MAILTO}
+              className="inline-flex h-[54px] items-center gap-3 rounded-xl border border-white/45 bg-[#0a1120]/80 px-6 text-[16px] font-bold text-white transition hover:border-[#f1dcaa] hover:bg-[#101b33] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f1dcaa]"
+            >
+              <svg viewBox="0 0 24 24" className="size-6 text-[#e7cf9b]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="m3.5 7 8.5 6.5L20.5 7" />
+              </svg>
+              Email Recruitment Team
+            </a>
+          </div>
         </div>
       </div>
     </section>
