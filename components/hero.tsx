@@ -5,7 +5,7 @@ const MODELS = [
   { src: '/assets/img/hero/model-2.webp', alt: 'Blue-grey and white PHirst townhouses at night' },
   { src: '/assets/img/hero/model-3.webp', alt: 'White and yellow PHirst rowhouses at night' },
   { src: '/assets/img/hero/model-4.webp', alt: 'Single-attached PHirst homes at night' },
-  { src: '/assets/img/hero/model-5.webp', alt: 'Two-storey PHirst homes with wood accents at night' },
+  { src: '/assets/img/hero/model-5.webp', alt: 'Cartland, Charles and Christie PHirst homes at night' },
   { src: '/assets/img/hero/model-6.webp', alt: 'Charles and Corin PHirst homes with balconies at night' },
 ];
 
