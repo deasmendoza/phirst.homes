@@ -24,6 +24,8 @@ export interface Schedule {
 export interface Term {
   id: string;
   label: string;
+  /** The template's "SPOT 5% RS MONTH" sheet: spot 5% paid on reservation, as RSBS units require. */
+  rsbs?: boolean;
   schedule: (net: number, rf: number, beforeVat: number) => Schedule;
 }
 
@@ -86,7 +88,7 @@ const spotOnly = (pct: number) => (net: number, rf: number): Schedule => ({
 const PAGIBIG: Term[] = [
   { id: 'pif-20-12', label: '20% in 12 months', schedule: installment(0.2, 12) },
   { id: 'pif-20-18', label: '20% in 18 months', schedule: installment(0.2, 18) },
-  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', schedule: spotThen(1, 0.1, 15) },
+  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', rsbs: true, schedule: spotThen(1, 0.1, 15) },
   { id: 'pif-s5-30-5-13', label: 'Spot 5% in 30 days + 5% in 13 months', schedule: spotThen(1, 0.05, 13) },
   { id: 'pif-s5-60-5-13', label: 'Spot 5% in 60 days + 5% in 13 months', schedule: spotThen(2, 0.05, 13) },
   { id: 'pif-s5-90-5-13', label: 'Spot 5% in 90 days + 5% in 13 months', schedule: spotThen(3, 0.05, 13) },
@@ -97,7 +99,7 @@ const BANK: Term[] = [
   { id: 'bank-10-12', label: '10% in 12 months', schedule: installment(0.1, 12) },
   { id: 'bank-15-14', label: '15% in 14 months', schedule: installment(0.15, 14) },
   { id: 'bank-15-18', label: '15% in 18 months', schedule: installment(0.15, 18) },
-  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', schedule: spotThen(1, 0.1, 13) },
+  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', rsbs: true, schedule: spotThen(1, 0.1, 13) },
   { id: 'bank-s5-30-10-13', label: 'Spot 5% in 30 days + 10% in 13 months', schedule: spotThen(1, 0.1, 13) },
   { id: 'bank-s5-60-10-13', label: 'Spot 5% in 60 days + 10% in 13 months', schedule: spotThen(2, 0.1, 13) },
   { id: 'bank-s5-90-10-13', label: 'Spot 5% in 90 days + 10% in 13 months', schedule: spotThen(3, 0.1, 13) },
@@ -228,3 +230,15 @@ export function reservationFee(unitType: string, project: string): number | null
  * their prices are beyond what Pag-IBIG lends.
  */
 export const pagibigAvailable = (unitType: string) => !/^(UNNA|DUA|BRENNA|CARTLAND|CHARLES|CHRISTIE|CORIN)\b/.test(unitType.toUpperCase());
+
+/**
+ * Payment terms offered for a unit. RSBS units (reservation sale and book sale: spot 5%
+ * downpayment on reservation) get only the reservation-month spot term, not the Memo
+ * Terms instalment plans. Cash terms are left as they are: the template has no RSBS
+ * version of them.
+ */
+export function termsFor(financing: Financing, unitTerms: string): Term[] {
+  const all = TERMS[financing];
+  if (financing === 'cash' || !/RSBS/i.test(unitTerms)) return all;
+  return all.filter((t) => t.rsbs);
+}

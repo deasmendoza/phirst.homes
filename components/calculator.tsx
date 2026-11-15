@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Select, type Option } from '@/components/ui/select';
-import { FINANCING, TERMS, YEARS, loan, pagibigAvailable, reservationFee, type Financing } from '@/lib/compute';
+import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
   blockLot,
@@ -174,11 +174,18 @@ export function Calculator() {
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
   const noPagibig = type !== '' && !pagibigAvailable(type);
-  const terms = financing ? TERMS[financing] : [];
+  const terms = useMemo(() => (financing ? termsFor(financing, unit?.terms ?? '') : []), [financing, unit]);
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
   const needsYears = financing !== '' && financing !== 'cash';
   const complete = !!unit && !!financing && !!term && (!needsYears || years !== '');
+
+  // Keep the chosen term valid when the unit changes (RSBS units have fewer terms),
+  // and pick the term automatically when there is only one.
+  useEffect(() => {
+    if (termId && !terms.some((t) => t.id === termId)) setTermId('');
+    else if (!termId && terms.length === 1) setTermId(terms[0].id);
+  }, [terms, termId]);
 
   const result = useMemo(() => {
     if (!unit || !financing || !term || (needsYears && !years)) return null;
