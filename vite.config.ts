@@ -8,6 +8,23 @@ import tailwindcss from '@tailwindcss/vite';
 // site is viewed without Netlify.
 function localInventory(): Plugin {
   const handle: Connect.NextHandleFunction = async (req, res, next) => {
+    // Bookings are only saved on Netlify. Locally the form is checked the same way, then dropped.
+    if (req.url && /^\/api\/bookings(\?|$)/.test(req.url) && req.method === 'POST') {
+      const chunks: Buffer[] = [];
+      for await (const c of req) chunks.push(c as Buffer);
+      // @ts-expect-error plain JavaScript module without type declarations
+      const { readBooking } = await import('./netlify/functions/bookings.mjs');
+      let result: { error?: string };
+      try {
+        result = readBooking(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      } catch {
+        result = { error: 'The booking could not be read.' };
+      }
+      res.statusCode = result.error ? 422 : 200;
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify(result.error ? { error: result.error } : { ok: true, local: true }));
+      return;
+    }
     if (!req.url || !/^\/api\/inventory(\?|$)/.test(req.url)) return next();
     try {
       // @ts-expect-error plain JavaScript module without type declarations

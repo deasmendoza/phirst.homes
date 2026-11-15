@@ -35,3 +35,13 @@
   from = "/careers/"
   to = "/index.html"
   status = 200
+
+# /book-a-viewing is the homepage, scrolled to the Book a Viewing section.
+[[redirects]]
+  from = "/book-a-viewing"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/book-a-viewing/"
+  to = "/index.html"
+  status = 200

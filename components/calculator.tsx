@@ -232,9 +232,10 @@ export function Calculator() {
     ].filter((l, i, a) => l !== '' || i >= a.length - 3);
     return `mailto:${EMAIL}?subject=${encodeURIComponent(`Inquiry: ${titleCase(unit.type)}, ${blockLot(unit.code)}, ${projectLabel(unit.project)}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
   };
+  // Carries the unit being viewed into the Book a Viewing form.
   const viewing = unit
-    ? `/contact/?model=${encodeURIComponent(titleCase(unit.type))}&location=${encodeURIComponent(projectLabel(unit.project))}`
-    : '/contact/';
+    ? `/book-a-viewing?${new URLSearchParams({ project: projectLabel(unit.project), model: titleCase(unit.type), unit: [phaseLabel(unit), blockLot(unit.code)].filter(Boolean).join(' ') })}`
+    : '/book-a-viewing';
 
   const asOf = inventory.asOf
     ? new Date(`${inventory.asOf}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

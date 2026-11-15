@@ -4,7 +4,7 @@ const LINKS = [
   ['Calculator', '/calculator'],
   ['Careers', '/careers'],
   ['Contact', '/contact/'],
-  ['Book a Viewing', '/contact/'],
+  ['Book a Viewing', '/book-a-viewing'],
 ];
 
 /** Shown below 1024px only; on desktop the menu is part of the hero artwork. */

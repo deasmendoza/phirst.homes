@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
+import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
 import { Careers } from '@/components/careers';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
@@ -20,7 +21,7 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers' };
+const SECTIONS: Record<string, string> = { '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing' };
 const normalize = (path: string) => path.replace(/\/+$/, '') || '/';
 
 function scrollToPath(path: string, behavior: ScrollBehavior) {
@@ -43,10 +44,13 @@ function useSectionRoutes() {
       if (!link || link.target || link.hasAttribute('download')) return;
       const url = new URL(link.href, location.href);
       const path = normalize(url.pathname);
-      if (url.origin !== location.origin || url.search || url.hash) return;
+      if (url.origin !== location.origin || url.hash) return;
       if (path !== '/' && !SECTIONS[path]) return;
+      // Only section links may carry details (the calculator's unit, for the booking form).
+      if (url.search && !SECTIONS[path]) return;
       e.preventDefault();
-      if (normalize(location.pathname) !== path) history.pushState(null, '', path);
+      if (normalize(location.pathname) !== path || location.search !== url.search) history.pushState(null, '', path + url.search);
+      window.dispatchEvent(new Event(ROUTE_EVENT));
       scrollToPath(path, 'smooth');
     };
     const onPop = () => scrollToPath(location.pathname, 'smooth');
@@ -72,6 +76,7 @@ export default function App() {
         <Locations />
         <Calculator />
         <Careers />
+        <BookViewing />
       </main>
     </>
   );
