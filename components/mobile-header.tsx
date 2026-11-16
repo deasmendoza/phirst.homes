@@ -2,9 +2,9 @@ const LINKS = [
   ['House Models', '/house-models/'],
   ['Locations', '/locations'],
   ['Calculator', '/calculator'],
+  ['Book a Viewing', '/book-a-viewing'],
   ['Careers', '/careers'],
   ['Contact', '/contact/'],
-  ['Book a Viewing', '/book-a-viewing'],
 ];
 
 /** Shown below 1024px only; on desktop the menu is part of the hero artwork. */

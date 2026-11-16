@@ -75,8 +75,8 @@ export default function App() {
         <Hero desktop={desktop} />
         <Locations />
         <Calculator />
-        <Careers />
         <BookViewing />
+        <Careers />
       </main>
     </>
   );
