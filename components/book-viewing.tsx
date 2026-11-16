@@ -359,12 +359,12 @@ export function BookViewing() {
             <img
               src="/assets/img/site-tripping-van.webp"
               alt="White PHirst Park Homes van used for free site tripping transfers"
-              width={426}
-              height={270}
+              width={565}
+              height={310}
               loading="lazy"
-              className="mx-auto block w-full max-w-[min(100%,58vh)] [mask-image:radial-gradient(ellipse_at_50%_52%,#000_60%,transparent_76%)] lg:max-w-[min(100%,54vh)]"
+              className="mx-auto block w-full max-w-[min(100%,58vh)] [mask-image:radial-gradient(ellipse_at_50%_52%,#000_63%,transparent_77%)] lg:max-w-[min(100%,54vh)]"
             />
-            <div className="relative z-10 mx-auto -mt-[7%] flex w-[min(100%,560px)] items-center gap-4 bg-[linear-gradient(100deg,#c2933a,#f1d488_45%,#c79a3f)] py-2.5 pl-7 pr-9 shadow-[0_14px_34px_rgba(0,0,0,0.5)] [clip-path:polygon(22px_0,100%_0,calc(100%-22px)_100%,0_100%)]">
+            <div className="relative z-10 mx-auto -mt-[3%] flex w-[min(100%,560px)] items-center gap-4 bg-[linear-gradient(100deg,#c2933a,#f1d488_45%,#c79a3f)] py-2.5 pl-7 pr-9 shadow-[0_14px_34px_rgba(0,0,0,0.5)] [clip-path:polygon(22px_0,100%_0,calc(100%-22px)_100%,0_100%)]">
               <span className="grid size-[clamp(48px,3.8vw,68px)] shrink-0 place-items-center rounded-full bg-[#0a1a36] text-gold-soft">
                 <Icon name="van" className="size-[62%]" />
               </span>
