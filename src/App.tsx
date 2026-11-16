@@ -6,6 +6,7 @@ import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
 import { Careers } from '@/components/careers';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
+import { SiteFooter } from '@/components/site-footer';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -78,6 +79,7 @@ export default function App() {
         <BookViewing />
         <Careers />
       </main>
+      <SiteFooter />
     </>
   );
 }
