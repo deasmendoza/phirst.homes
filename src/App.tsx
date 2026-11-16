@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
+import { HeroScroll } from '@/components/hero-scroll';
+import { pickHero } from '@/src/hero-config';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
 import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
@@ -67,13 +69,14 @@ function useSectionRoutes() {
 
 export default function App() {
   const desktop = useDesktop();
+  const [heroVariant] = useState(pickHero);
   useSectionRoutes();
   return (
     <>
       <MobileHeader />
       <SiteNav />
       <main>
-        <Hero desktop={desktop} />
+        {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
         <Locations />
         <Calculator />
         <BookViewing />
