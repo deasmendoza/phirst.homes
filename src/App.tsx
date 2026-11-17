@@ -10,6 +10,7 @@ import { Careers } from '@/components/careers';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
+import { BackgroundPixelStars } from '@/components/ui/background-pixel-stars';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -74,17 +75,23 @@ export default function App() {
   useSectionRoutes();
   return (
     <>
+      <BackgroundPixelStars />
       <MobileHeader />
       <SiteNav />
-      <main>
-        {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
+      <main className="relative z-10">
+        {/* The hero keeps its own solid night backdrop: the shared star background starts below it. */}
+        <div className="bg-night">
+          {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
+        </div>
         <HouseModels />
         <Locations />
         <Calculator />
         <BookViewing />
         <Careers />
       </main>
-      <SiteFooter />
+      <div className="relative z-10">
+        <SiteFooter />
+      </div>
     </>
   );
 }

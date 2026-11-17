@@ -15,8 +15,15 @@
 html,
 body {
   margin: 0;
-  background: var(--color-night);
   color: #fff;
+}
+
+/* One background for the whole page: night colour with a faint pixel grid.
+   The twinkling stars are drawn over it by <BackgroundPixelStars />. */
+body {
+  background-color: var(--color-night);
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAIElEQVR42mIUEhJiwAbevXuHVZyJgUQwqmEUDB0AEGAADd8DEPTX6ksAAAAASUVORK5CYII=');
+  background-size: 10px;
 }
 
 /* Hero menu pills (desktop): thin gold outline on translucent night blue; the first one is solid gold. */
@@ -84,6 +91,7 @@ html {
     background: #fff;
   }
   header,
+  canvas,
   section[aria-label="PHirst house models"],
   #locations,
   #careers,

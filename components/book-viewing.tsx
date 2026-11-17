@@ -1,3 +1,4 @@
+import { SectionSeam } from '@/components/ui/section-seam';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
 // Book a Viewing: the site-tripping booking form beside the free van transfer.
@@ -227,11 +228,12 @@ export function BookViewing() {
     <section
       id="book-a-viewing"
       aria-labelledby="book-viewing-title"
-      className="relative isolate scroll-mt-16 overflow-hidden bg-[#06142a] lg:scroll-mt-0 px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4vw,84px)] lg:pb-5 lg:pt-[84px]"
+      className="relative isolate scroll-mt-16 overflow-hidden lg:scroll-mt-0 px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4vw,84px)] lg:pb-5 lg:pt-[84px]"
     >
+      <SectionSeam />
       {/* Backdrop: deep navy with soft light, and gold ribbons sweeping through two corners */}
       <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_74%_58%,rgba(20,44,84,0.75),transparent_60%),linear-gradient(180deg,#05070d,rgba(6,20,42,0)_16%,rgba(6,20,42,0)_86%,#05070d)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_74%_58%,rgba(20,44,84,0.75),transparent_60%)]" />
         <div className="absolute -left-[16vw] -top-[26vw] hidden size-[44vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />
         <div className="absolute -left-[19vw] -top-[29vw] hidden size-[46vw] rounded-full border border-[#ecca7c]/35 lg:block" />
         <div className="absolute -bottom-[30vw] -right-[14vw] hidden size-[46vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />

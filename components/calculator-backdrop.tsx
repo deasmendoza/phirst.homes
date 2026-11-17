@@ -74,7 +74,7 @@ function Keypad({ x, y, size, rotate, opacity }: { x: number; y: number; size: n
 
 export function CalculatorBackdrop() {
   return (
-    <div className="print-hide pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(160deg,#0c0e13,#0a1224_55%,#090c14)]" aria-hidden="true">
+    <div className="print-hide pointer-events-none absolute inset-0 -z-10 " aria-hidden="true">
       <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className="h-full w-full" fontFamily="Georgia, 'Times New Roman', serif">
         <Keypad x={1090} y={90} size={54} rotate={8} opacity={0.13} />
         <Keypad x={40} y={300} size={44} rotate={-10} opacity={0.1} />
@@ -95,7 +95,7 @@ export function CalculatorBackdrop() {
         ))}
       </svg>
       {/* Soft dark veil: keeps the marks as watermarks and blends into the sections above and below */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,rgba(9,12,20,0.1),rgba(9,12,20,0.5)_85%),linear-gradient(180deg,#0a1224,rgba(10,18,36,0)_16%,rgba(5,7,13,0)_84%,#05070d)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,rgba(5,7,13,0),rgba(5,7,13,0.4)_85%)]" />
     </div>
   );
 }
