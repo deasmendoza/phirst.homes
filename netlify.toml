@@ -15,3 +15,46 @@
   from = "/calculator/"
   to = "/index.html"
   status = 200
+
+# /locations is the homepage, scrolled to the Locations section.
+[[redirects]]
+  from = "/locations"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/locations/"
+  to = "/index.html"
+  status = 200
+
+# /careers is the homepage, scrolled to the Careers section.
+[[redirects]]
+  from = "/careers"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/careers/"
+  to = "/index.html"
+  status = 200
+
+# /book-a-viewing is the homepage, scrolled to the Book a Viewing section.
+[[redirects]]
+  from = "/book-a-viewing"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/book-a-viewing/"
+  to = "/index.html"
+  status = 200
+
+# /contact is the homepage, scrolled to the footer. "force" makes this win over the old
+# static page in public/contact, which would otherwise be served instead.
+[[redirects]]
+  from = "/contact"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/contact/"
+  to = "/index.html"
+  status = 200
+  force = true

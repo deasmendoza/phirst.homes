@@ -52,6 +52,18 @@ body {
   filter: brightness(1.08);
 }
 
+/* Hero slice edges: 1px lines through the centre of the reveal (50% 52%), turned by script. */
+.hero-slice-line {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: 1px;
+  height: 300vmax;
+  margin: -150vmax 0 0 -0.5px;
+  background: rgba(255, 244, 214, 0.85);
+  box-shadow: 0 0 8px rgba(255, 214, 122, 0.6);
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -73,6 +85,8 @@ html {
   }
   header,
   section[aria-label="PHirst house models"],
+  #locations,
+  #careers,
   .print-hide {
     display: none !important;
   }
