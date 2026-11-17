@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
+import { HouseModels } from '@/components/house-models';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -65,6 +66,7 @@ export default function App() {
       <MobileHeader />
       <main>
         <Hero desktop={desktop} />
+        <HouseModels />
         <Calculator />
       </main>
     </>
