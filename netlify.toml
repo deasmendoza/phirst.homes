@@ -58,3 +58,16 @@
   to = "/index.html"
   status = 200
   force = true
+
+# /house-models is the homepage, scrolled to the House Models section. "force" makes this win over
+# the old static page in public/house-models; the pages under it (e.g. /house-models/unna/) stay.
+[[redirects]]
+  from = "/house-models"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/house-models/"
+  to = "/index.html"
+  status = 200
+  force = true

@@ -26,7 +26,7 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
+const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
 const normalize = (path: string) => path.replace(/\/+$/, '') || '/';
 
 function scrollToPath(path: string, behavior: ScrollBehavior) {
