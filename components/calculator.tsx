@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Select, type Option } from '@/components/ui/select';
+import { SectionSeam } from '@/components/ui/section-seam';
 import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
@@ -242,11 +243,12 @@ export function Calculator() {
     : null;
 
   return (
-    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden bg-navy px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:py-9">
-      {/* Night render fading in from the left, as in the design. */}
-      <div className="print-hide pointer-events-none absolute inset-y-0 left-0 -z-10 hidden w-[46%] overflow-hidden lg:block" aria-hidden="true">
+    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:py-9">
+      <SectionSeam />
+
+      {/* Night render fading into the page background from the left (a mask, so the stars show through). */}
+      <div className="calc-art print-hide pointer-events-none absolute inset-y-0 left-0 -z-10 hidden w-[46%] overflow-hidden lg:block" aria-hidden="true">
         <img src="/assets/img/hero/model-4.webp" alt="" loading="lazy" className="absolute bottom-0 left-0 h-[131%] w-full max-w-none object-cover object-[12%_100%] opacity-40" />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(10,18,36,0.2),#0a1224_96%),linear-gradient(180deg,#0a1224,transparent_24%,transparent_72%,#0a1224)]" />
       </div>
 
       <div className="mx-auto grid w-full max-w-[1480px] items-stretch gap-6 lg:grid-cols-[minmax(410px,460px)_minmax(0,1fr)]">

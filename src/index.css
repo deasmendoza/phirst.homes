@@ -15,8 +15,23 @@
 html,
 body {
   margin: 0;
-  background: var(--color-night);
   color: #fff;
+}
+
+/* One background for the whole page: night colour with a faint pixel grid.
+   The twinkling stars are drawn over it by <BackgroundPixelStars />. */
+body {
+  background-color: var(--color-night);
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAIElEQVR42mIUEhJiwAbevXuHVZyJgUQwqmEUDB0AEGAADd8DEPTX6ksAAAAASUVORK5CYII=');
+  background-size: 10px;
+}
+
+/* Calculator artwork: fade out to the right, top and bottom without painting over the stars. */
+.calc-art {
+  -webkit-mask-image: linear-gradient(90deg, #000 4%, transparent 96%), linear-gradient(180deg, transparent, #000 24%, #000 72%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(90deg, #000 4%, transparent 96%), linear-gradient(180deg, transparent, #000 24%, #000 72%, transparent);
+  mask-composite: intersect;
 }
 
 /* Hero menu pills (desktop): thin gold outline on translucent night blue; the first one is solid gold. */
@@ -72,6 +87,7 @@ html {
     background: #fff;
   }
   header,
+  canvas,
   section[aria-label="PHirst house models"],
   .print-hide {
     display: none !important;

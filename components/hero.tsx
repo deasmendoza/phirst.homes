@@ -116,7 +116,7 @@ export function Hero({ desktop }: { desktop: boolean }) {
   }, [desktop]);
 
   return (
-    <section aria-label="PHirst house models" className="bg-night">
+    <section aria-label="PHirst house models">
       <div ref={trackRef} className="lg:h-[600vh]">
         <div className="relative aspect-[4/3] w-full overflow-hidden sm:aspect-[2/1] lg:sticky lg:top-0 lg:aspect-auto lg:h-screen">
           {/* Layer 1: night sky, never wipes */}

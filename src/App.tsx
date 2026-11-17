@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
+import { BackgroundPixelStars } from '@/components/ui/background-pixel-stars';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -62,8 +63,9 @@ export default function App() {
   useSectionRoutes();
   return (
     <>
+      <BackgroundPixelStars />
       <MobileHeader />
-      <main>
+      <main className="relative z-10">
         <Hero desktop={desktop} />
         <Calculator />
       </main>
