@@ -1,26 +1,29 @@
-import { reservationFee } from '@/lib/compute';
+import { PROVINCE_ORDER, projectLabel, provinceOf, type Unit } from '@/lib/inventory';
+import { TERMS, reservationFee } from '@/lib/compute';
 
 /**
- * The twelve house models shown in the House Models section, in order of floor area.
+ * The twelve house models in the House Models section, grouped by house type.
  * Specs are from PHirst's own model cards (Brenna, Dua, Cartland, Charles, Christie, Corin) and from
- * the model pages already on this site (Alora, Amani, Calista, Unna). A missing number is omitted
- * from the text rather than guessed.
+ * the model pages already on this site (Alora, Amani, Calista, Unna). A missing number is left out
+ * of the text rather than guessed.
  */
-export type HouseStatus = 'available' | 'soon' | 'unavailable';
+export type HouseStatus = 'available' | 'soon' | 'soldout';
+export type HouseType = 'townhouse' | 'bungalow' | 'single' | 'premium';
 
 export interface House {
   name: string;
+  type: HouseType;
   status: HouseStatus;
-  /** Floor area in sqm. */
+  /** Start of the unit type in the inventory sheet (e.g. "ALORA" matches ALORA MID, ALORA END). */
+  unit?: string;
+  /** Townhouses are priced as Mid and End. */
+  split?: boolean;
   floor?: number;
   /** Typical lot area in sqm: one number, or [inner/mid, end]. */
   lot?: number | [number, number];
   bedrooms?: number;
   bathrooms?: number;
   carport?: number;
-  /** Unit types the reservation fee schedule is looked up by (see reservationFee in lib/compute.ts). */
-  feeTypes?: string[];
-  /** Shown under the specs. */
   note?: string;
   /** Photos, front first. Replace the placeholders with the real renders. */
   images: string[];
@@ -29,33 +32,31 @@ export interface House {
 // Placeholders: the series renders already in /assets/img/hero. Replace per house.
 const P = (n: number) => `/assets/img/hero/model-${n}.webp`;
 
+// The first model of each type is the one shown when its type is chosen.
 export const HOUSES: House[] = [
-  { name: 'Aurora', status: 'soon', images: [P(3)] },
-  { name: 'Alora', status: 'available', floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, feeTypes: ['ALORA MID', 'ALORA END'], note: 'Rowhouse with a loft (provision for 1 bedroom).', images: [P(3)] },
-  { name: 'Amani', status: 'available', floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, feeTypes: ['AMANI MID', 'AMANI END'], images: [P(2)] },
-  { name: 'Calista', status: 'available', floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, feeTypes: ['CALISTA MID', 'CALISTA END'], images: [P(1)] },
-  { name: 'Brenna', status: 'available', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, feeTypes: ['BRENNA'], note: 'One-storey bungalow, available only in selected projects.', images: [P(2)] },
-  { name: 'Dua', status: 'available', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, feeTypes: ['DUA'], note: 'Standalone house with a single shared firewall.', images: [P(1)] },
-  { name: 'Unna', status: 'available', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, feeTypes: ['UNNA'], images: [P(4)] },
-  { name: 'Cartland', status: 'available', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, feeTypes: ['CARTLAND'], images: [P(5)] },
-  { name: 'Charles 70', status: 'available', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, feeTypes: ['CHARLES'], images: [P(5)] },
-  { name: 'Christie', status: 'available', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, feeTypes: ['CHRISTIE'], images: [P(5)] },
-  { name: 'Corin', status: 'available', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, feeTypes: ['CORIN'], images: [P(6)] },
-  { name: 'Charles 150', status: 'unavailable', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', images: [P(5)] },
+  { name: 'Calista', type: 'townhouse', status: 'available', unit: 'CALISTA', split: true, floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, images: [P(1)] },
+  { name: 'Amani', type: 'townhouse', status: 'available', unit: 'AMANI', split: true, floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, images: [P(2)] },
+  { name: 'Alora', type: 'townhouse', status: 'available', unit: 'ALORA', split: true, floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, carport: 1, note: 'Rowhouse with a loft (provision for 1 bedroom).', images: [P(3)] },
+  { name: 'Aurora', type: 'townhouse', status: 'soon', unit: 'AURORA', images: [P(3)] },
+  { name: 'Brenna', type: 'bungalow', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', images: [P(2)] },
+  { name: 'Unna', type: 'single', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [P(4)] },
+  { name: 'Dua', type: 'single', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', images: [P(1)] },
+  { name: 'Corin 120', type: 'premium', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, images: [P(6)] },
+  { name: 'Cartland 54', type: 'premium', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [P(5)] },
+  { name: 'Charles 70', type: 'premium', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, images: [P(5)] },
+  { name: 'Christie 90', type: 'premium', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, images: [P(5)] },
+  { name: 'Charles 150', type: 'premium', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', images: [P(5)] },
 ];
 
-const peso = (n: number) => `₱${n.toLocaleString('en-PH')}`;
+export const HOUSE_TYPES: { id: HouseType; label: string }[] = [
+  { id: 'townhouse', label: 'Townhouse' },
+  { id: 'bungalow', label: 'Bungalow' },
+  { id: 'single', label: 'Single Detached' },
+  { id: 'premium', label: 'Premium' },
+];
+
 const sqm = (n: number) => `${n} sqm`;
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-/** "₱10,000 – ₱12,500" when Mid and End differ, a single amount otherwise; null when there is no published fee. */
-export function feeText(h: House): string | null {
-  const fees = (h.feeTypes ?? []).map((t) => reservationFee(t, '')).filter((f): f is number => f != null);
-  if (!fees.length) return null;
-  const lo = Math.min(...fees);
-  const hi = Math.max(...fees);
-  return lo === hi ? peso(lo) : `${peso(lo)} – ${peso(hi)}`;
-}
 
 /** The specs as lines of plain text, one per fact. */
 export function specLines(h: House): string[] {
@@ -67,4 +68,46 @@ export function specLines(h: House): string[] {
   if (h.carport != null) lines.push(`${h.carport} Carport`);
   if (h.note) lines.push('', h.note);
   return lines;
+}
+
+/** One column of the price table: Mid and End for a townhouse, a single column for every other model. */
+export interface PriceColumn {
+  label: string;
+  /** Lowest TCP among the units of this column. */
+  tcp: number;
+  /** Reservation fee for that unit; null when the published schedule does not cover it. */
+  fee: number | null;
+  /** Monthly downpayment of "10% in 12 months" with a bank loan, for that unit. */
+  monthly: number | null;
+}
+
+export interface HouseStats {
+  /** Provinces that have units of this model, in the order the calculator lists them. */
+  provinces: string[];
+  columns: PriceColumn[];
+}
+
+const BANK_10_12 = TERMS.bank.find((t) => t.id === 'bank-10-12')!;
+
+function column(label: string, units: Unit[]): PriceColumn | null {
+  if (!units.length) return null;
+  const u = units.reduce((a, b) => (b.tcp < a.tcp ? b : a));
+  const fee = reservationFee(u.type, u.project);
+  // The sheet's TCP already includes VAT, as in the calculator.
+  const vatOk = u.vat != null && u.vat > 0 && u.tcpExVat != null && Math.abs(u.tcpExVat + u.vat - u.tcp) < 1;
+  const monthly = fee == null ? null : BANK_10_12.schedule(u.tcp, fee, u.tcp - (vatOk ? (u.vat as number) : 0)).monthly?.amount ?? null;
+  return { label, tcp: u.tcp, fee, monthly };
+}
+
+/** Where a model is sold and what it starts at, from today's inventory (the same data as the calculator). */
+export function houseStats(h: House, units: Unit[]): HouseStats | null {
+  if (!h.unit) return null;
+  const mine = units.filter((u) => u.type.toUpperCase().startsWith(h.unit as string) && u.tcp > 0);
+  if (!mine.length) return null;
+  const provinces = [...new Set(mine.map((u) => provinceOf(u.project)))].sort((a, b) => PROVINCE_ORDER.indexOf(a) - PROVINCE_ORDER.indexOf(b));
+  const columns = (h.split
+    ? [column('Mid', mine.filter((u) => /\bMID$/.test(u.type.toUpperCase()))), column('End', mine.filter((u) => /END/.test(u.type.toUpperCase())))]
+    : [column('', mine)]
+  ).filter((c): c is PriceColumn => c != null);
+  return { provinces: provinces.map((p) => (p === 'Other' ? projectLabel(mine[0].project) : p)), columns };
 }
