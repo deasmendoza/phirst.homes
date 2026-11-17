@@ -34,7 +34,7 @@ function toVariant(h: House, stats: HouseStats | null | undefined): SneakerVaria
     tint: GOLD,
     src: h.images[0],
     gallery: h.images.map((src, i) => ({ src, label: i === 0 ? 'Front' : `Photo ${i + 1}` })),
-    eyebrow: `Meet ${h.name}`,
+    eyebrow: 'House Specs',
     title: '',
     description: description(h, stats),
   };
