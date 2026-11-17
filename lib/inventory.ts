@@ -88,8 +88,9 @@ export function sortUnits(units: Unit[]) {
   });
 }
 
-/** Night render used for the unit header; only the four featured series have one. */
+/** Night render shown in the unit header, for the models that have one. */
 export function seriesImage(type: string) {
-  const m = /^(UNNA|CALISTA|AMANI|ALORA)/.exec(type.toUpperCase());
-  return m ? `/assets/img/hero/${m[1].toLowerCase()}.webp` : null;
+  const t = type.toUpperCase();
+  const n = /^CALISTA/.test(t) ? 1 : /^AMANI/.test(t) ? 2 : /^ALORA/.test(t) ? 3 : /^UNNA/.test(t) ? 4 : /^(CARTLAND|CHARLES|CHRISTIE)/.test(t) ? 5 : /^CORIN/.test(t) ? 6 : 0;
+  return n ? `/assets/img/hero/model-${n}.webp` : null;
 }
