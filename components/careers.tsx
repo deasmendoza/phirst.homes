@@ -28,13 +28,6 @@ export function Careers() {
       className="relative isolate overflow-hidden px-5 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4.5vw,96px)] lg:pb-10 lg:pt-[84px]"
     >
       <SectionSeam />
-      {/* Architectural backdrop: a faint drafting grid, a soft light behind the portrait, and fades into the neighbouring sections */}
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(#e7cf9b_1px,transparent_1px),linear-gradient(90deg,#e7cf9b_1px,transparent_1px)] [background-size:88px_88px]" />
-        <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(#e7cf9b_1px,transparent_1px),linear-gradient(90deg,#e7cf9b_1px,transparent_1px)] [background-size:22px_22px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_22%_48%,rgba(231,207,155,0.16),transparent_46%),radial-gradient(ellipse_at_78%_40%,rgba(16,27,51,0.9),transparent_70%)]" />
-      </div>
-
       <div className="mx-auto grid w-full max-w-[1760px] items-center gap-10 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:gap-[clamp(40px,5vw,110px)]">
         {/* ---------- Portrait ---------- */}
         <div className="relative mx-auto w-full max-w-[340px] lg:max-w-none">

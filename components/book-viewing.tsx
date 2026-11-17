@@ -231,15 +231,6 @@ export function BookViewing() {
       className="relative isolate scroll-mt-16 overflow-hidden lg:scroll-mt-0 px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4vw,84px)] lg:pb-5 lg:pt-[84px]"
     >
       <SectionSeam />
-      {/* Backdrop: deep navy with soft light, and gold ribbons sweeping through two corners */}
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_74%_58%,rgba(20,44,84,0.75),transparent_60%)]" />
-        <div className="absolute -left-[16vw] -top-[26vw] hidden size-[44vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />
-        <div className="absolute -left-[19vw] -top-[29vw] hidden size-[46vw] rounded-full border border-[#ecca7c]/35 lg:block" />
-        <div className="absolute -bottom-[30vw] -right-[14vw] hidden size-[46vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />
-        <div className="absolute -bottom-[33vw] -right-[17vw] hidden size-[48vw] rounded-full border border-[#ecca7c]/35 lg:block" />
-      </div>
-
       <div className="mx-auto grid w-full max-w-[1760px] gap-x-[clamp(32px,4vw,84px)] gap-y-8 lg:gap-y-[clamp(8px,1.6vh,24px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-center">
         {/* ---------- Heading ---------- */}
         <div className="text-center lg:col-start-2 lg:row-start-1">

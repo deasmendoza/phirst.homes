@@ -85,6 +85,14 @@ html {
   }
 }
 
+/* House Models: the showcase paints its own tinted backdrop; drop it so the page background shows. */
+#house-models .snp-root {
+  background: transparent;
+}
+#house-models .snp-bg {
+  display: none;
+}
+
 /* Save / Print: only the computation, on white paper. */
 @media print {
   body {
