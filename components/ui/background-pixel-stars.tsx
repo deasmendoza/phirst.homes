@@ -1,14 +1,13 @@
 import { memo, useCallback, useEffect, useRef } from "react";
 
-// 16-bit color palette (reduced color options)
+// Brand palette only: white and the PHirst golds (more white than gold, so it stays calm).
 const STAR_COLORS = [
   "#FFFFFF", // White
-  "#FFFFAA", // Light yellow
-  "#AAAAFF", // Light blue
-  "#FFAAAA", // Light red
-  "#AAFFAA", // Light green
-  "#FFAAFF", // Light purple
-  "#AAFFFF", // Light cyan
+  "#FFFFFF", // White
+  "#FFFFFF", // White
+  "#FFD77A", // Soft gold
+  "#FFD77A", // Soft gold
+  "#F2B63C", // Gold
 ] as const;
 
 // Configuration constants
@@ -274,7 +273,7 @@ export const BackgroundPixelStars = memo(
               ctx.rotate((star.angle * Math.PI) / 180);
               ctx.translate(-point.x, -point.y);
 
-              ctx.fillStyle = `rgba(180, 242, 255, ${point.opacity})`;
+              ctx.fillStyle = `rgba(255, 215, 122, ${point.opacity})`;
               ctx.fillRect(point.x, point.y, shootingStarPixelSize, shootingStarPixelSize);
 
               ctx.restore();
