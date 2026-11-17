@@ -62,6 +62,8 @@ export type SneakerVariant = {
   eyebrow?: string
   title?: string
   description?: string
+  /** "listing" mode: a labelled extra block under the description, styled like the other labels. */
+  extra?: { label: string; text?: string }
   /** The big word behind the product. Defaults to `name`. */
   word?: string
   /** "listing" mode only: the button for this variant. A `href` makes it a link; without one it is disabled. */
@@ -659,7 +661,9 @@ export default function SneakerProductHero({
 .snp-eyebrow{margin:0;font-size:max(12px,1.5cqw);color:var(--color-muted-foreground)}
 .snp-eyebrow,.snp-title,.snp-desc{white-space:pre-line}
 .snp-root[data-mode="listing"] .snp-title{font-size:max(20px,2cqw);max-width:none}
-.snp-root[data-mode="listing"] .snp-eyebrow{font-size:max(22px,2.4cqw);font-weight:600;line-height:1.18;letter-spacing:-.01em;color:var(--color-foreground)}
+.snp-root[data-mode="listing"] .snp-eyebrow{font-size:max(12px,1.45cqw);color:var(--color-muted-foreground);letter-spacing:.02em}
+.snp-extra{margin-top:2.4cqw}
+.snp-root[data-mode="listing"] .snp-extra .snp-desc{margin-top:1cqw}
 .snp-root[data-mode="listing"] .snp-desc{margin-top:2.4cqw}
 .snp-root[data-mode="listing"] .snp-body{grid-template-columns:20cqw minmax(0,1fr) 25cqw;padding-right:5cqw}
 .snp-root[data-mode="listing"] .snp-title::first-line{font-size:max(12px,1.5cqw);font-weight:500;letter-spacing:0;color:var(--color-muted-foreground)}
@@ -811,7 +815,6 @@ a.snp-cta{text-decoration:none}
   .snp-rating{gap:6px}
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-root[data-mode="listing"] .snp-body{grid-template-columns:1fr;padding-right:20px}
-  .snp-root[data-mode="listing"] .snp-eyebrow{font-size:24px}
   .snp-chips{gap:8px;margin-top:10px}
   .snp-chip{padding:7px 12px;font-size:13px}
   .snp-actions{margin-top:22px;gap:20px}
@@ -840,6 +843,12 @@ a.snp-cta{text-decoration:none}
           <p className={"snp-eyebrow" + (listing ? " snp-fade" : "")} key={listing ? "e" + active : undefined}>{copy.eyebrow}</p>
           {copy.title ? <h2 className={"snp-title" + (listing ? " snp-fade" : "")} key={listing ? "t" + active : undefined}>{copy.title}</h2> : null}
           <p className={"snp-desc" + (listing ? " snp-fade" : "")} key={listing ? "d" + active : undefined}>{copy.description}</p>
+          {listing && cur?.extra ? (
+            <div className="snp-extra snp-fade" key={"x" + active}>
+              <span className="snp-label">{cur.extra.label}</span>
+              {cur.extra.text ? <p className="snp-desc">{cur.extra.text}</p> : null}
+            </div>
+          ) : null}
           <div className="snp-thumbs">
             <span className="snp-thumbset" ref={thumbsRef}>
               {views.slice(0, 3).map((vw, i) => (

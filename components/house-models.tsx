@@ -17,14 +17,14 @@ const peso = new Intl.NumberFormat('en-PH', { maximumFractionDigits: 0 });
 const money = (n: number | null | undefined) => (n == null ? '—' : `₱${peso.format(Math.round(n))}`);
 const list = (items: string[]) => items.join(', ');
 
-/** The left-hand text: specs, then where the model is sold. */
-function description(h: House, stats: HouseStats | null | undefined): string {
+/** The left-hand text: the specs, then a labelled line for where the model is sold. */
+function copy(h: House, stats: HouseStats | null | undefined): { description: string; extra?: { label: string; text?: string } } {
   if (h.status === 'soon') {
-    return ['Details will be announced soon.', '', stats ? `Coming soon in ${list(stats.provinces)}` : 'Coming soon'].join('\n');
+    return { description: 'Details will be announced soon.', extra: { label: 'COMING SOON IN', text: stats ? list(stats.provinces) : undefined } };
   }
-  const lines = specLines(h);
-  if (h.status === 'soldout') return [...lines, '', 'Sold out'].join('\n');
-  return stats ? [...lines, '', `Available in ${list(stats.provinces)}`].join('\n') : lines.join('\n');
+  const description = specLines(h).join('\n');
+  if (h.status === 'soldout') return { description, extra: { label: 'SOLD OUT' } };
+  return { description, extra: stats ? { label: 'AVAILABLE IN', text: list(stats.provinces) } : undefined };
 }
 
 function toVariant(h: House, stats: HouseStats | null | undefined): SneakerVariant {
@@ -34,9 +34,9 @@ function toVariant(h: House, stats: HouseStats | null | undefined): SneakerVaria
     tint: GOLD,
     src: h.images[0],
     gallery: h.images.map((src, i) => ({ src, label: i === 0 ? 'Front' : `Photo ${i + 1}` })),
-    eyebrow: 'House Specs',
+    eyebrow: 'HOUSE SPECS',
     title: '',
-    description: description(h, stats),
+    ...copy(h, stats),
   };
 }
 
