@@ -58,6 +58,14 @@ export type SneakerVariant = {
   soldOut?: string[]
   /** Stock per size label for this colourway; overrides the size's own. */
   stock?: StockBySize
+  /** Per-variant copy. Each falls back to the matching prop. Line breaks are kept. */
+  eyebrow?: string
+  title?: string
+  description?: string
+  /** The big word behind the product. Defaults to `name`. */
+  word?: string
+  /** "listing" mode only: the button for this variant. A `href` makes it a link; without one it is disabled. */
+  cta?: { label: string; href?: string }
 }
 
 export type SneakerSize = {
@@ -93,6 +101,18 @@ export type SneakerProductHeroProps = {
   likeColor?: string
   onAddToCart?: (info: { variant: SneakerVariant; size: string; price: number }) => void
   onLikeChange?: (liked: boolean) => void
+  /**
+   * "product" (default): sizes, stock, rating, price, colour swatches, add to cart and a like button.
+   * "listing": a list of named choices (chips) and one call-to-action per variant; no sizes, stock,
+   * rating, price or like button.
+   */
+  mode?: "product" | "listing"
+  /** Colour of chips and the button in "listing" mode. Default: the foreground colour. */
+  accent?: string
+  /** Text colour on the accent. Default: the background colour. */
+  accentText?: string
+  /** Size of the big word behind the product, in cqw. Default 11. */
+  wordSize?: number
   /** Any CSS length. The section is at least this tall. Default 100svh. */
   height?: number | string
   className?: string
@@ -202,11 +222,16 @@ export default function SneakerProductHero({
   likeColor = "#e11d48",
   onAddToCart,
   onLikeChange,
+  mode = "product",
+  accent,
+  accentText,
+  wordSize = 11,
   height = "100svh",
   className,
   style,
 }: SneakerProductHeroProps) {
   const count = variants.length
+  const listing = mode === "listing"
   const [active, setActive] = React.useState(() => Math.min(Math.max(defaultVariant, 0), Math.max(count - 1, 0)))
   const avail = (vi: number, label: string) => availability(sizes.find((s) => s.label === label), variants[vi])
   const firstFree = (vi: number) => sizes.find((s) => !avail(vi, s.label).soldOut)?.label ?? ""
@@ -583,6 +608,12 @@ export default function SneakerProductHero({
   }, [viewer])
 
   const tintOf = (vv: SneakerVariant) => vv.tint ?? vv.swatch
+  const cur = variants[active]
+  const copy = {
+    eyebrow: cur?.eyebrow ?? eyebrow,
+    title: cur?.title ?? title,
+    description: cur?.description ?? description,
+  }
   const here = avail(active, size)
   const stockTone = here.soldOut ? "out" : here.stock !== undefined && here.stock <= lowStock ? "low" : "ok"
   const stockText =
@@ -596,7 +627,16 @@ export default function SneakerProductHero({
     <section
       ref={rootRef}
       className={"snp-root" + (className ? " " + className : "")}
-      style={{ minHeight: height, ["--snp-like" as string]: likeColor, ["--snp-tint" as string]: v ? tintOf(variants[active] ?? v) : "transparent", ...style }}
+      data-mode={mode}
+      style={{
+        minHeight: height,
+        ["--snp-like" as string]: likeColor,
+        ["--snp-tint" as string]: v ? tintOf(variants[active] ?? v) : "transparent",
+        ["--snp-word" as string]: wordSize + "cqw",
+        ["--snp-word-m" as string]: wordSize * 1.8 + "cqw",
+        ...(accent ? { ["--snp-accent" as string]: accent, ["--snp-accent-fg" as string]: accentText ?? "var(--color-background)" } : null),
+        ...style,
+      }}
       aria-label={title}
     >
       <style>{`
@@ -614,6 +654,11 @@ export default function SneakerProductHero({
   padding:4cqw 9cqw 4cqw 7.3cqw;overflow:hidden}
 .snp-info{align-self:start;position:relative;z-index:1}
 .snp-eyebrow{margin:0;font-size:max(12px,1.5cqw);color:var(--color-muted-foreground)}
+.snp-eyebrow,.snp-title,.snp-desc{white-space:pre-line}
+.snp-root[data-mode="listing"] .snp-title{font-size:max(20px,2cqw);max-width:none}
+.snp-root[data-mode="listing"] .snp-title::first-line{font-size:max(12px,1.5cqw);font-weight:500;letter-spacing:0;color:var(--color-muted-foreground)}
+.snp-fade{animation:snp-fade .5s cubic-bezier(.2,.8,.2,1) both}
+@keyframes snp-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .snp-title{margin:2cqw 0 0;font-size:max(22px,2.4cqw);line-height:1.18;font-weight:600;letter-spacing:-.01em;max-width:17cqw;text-wrap:balance}
 .snp-desc{margin:3.6cqw 0 0;max-width:19cqw;font-size:max(11px,1.05cqw);line-height:1.45;font-style:italic;color:var(--color-muted-foreground)}
 .snp-thumbs{display:flex;align-items:center;gap:2.4cqw;margin-top:9cqw}
@@ -625,7 +670,7 @@ export default function SneakerProductHero({
   font-size:max(10px,1.05cqw);transition:transform .25s}
 .snp-more:hover{transform:scale(1.08)}
 .snp-stage{position:relative;align-self:stretch;max-height:42cqw;min-height:26cqw}
-.snp-word{position:absolute;left:50%;top:0;translate:-50% -14%;font-size:11cqw;line-height:1;font-weight:800;letter-spacing:-.04em;
+.snp-word{position:absolute;left:50%;top:0;translate:-50% -14%;font-size:var(--snp-word,11cqw);line-height:1;font-weight:800;letter-spacing:-.04em;
   text-transform:uppercase;white-space:nowrap;color:color-mix(in oklab,var(--t) 34%,transparent);pointer-events:none;user-select:none}
 .snp-float{position:absolute;inset:0}
 .snp-tilt{position:absolute;inset:0;transform-style:preserve-3d}
@@ -678,7 +723,7 @@ export default function SneakerProductHero({
 .snp-swatch[aria-pressed="true"]{box-shadow:inset 0 0 0 max(3px,.3cqw) var(--sw),inset 0 0 0 max(6px,.65cqw) var(--color-background),
   inset 0 0 0 20cqw var(--sw)}
 .snp-actions{position:relative;display:flex;align-items:center;gap:3.6cqw;margin-top:4.2cqw}
-.snp-cta{height:max(40px,4.4cqw);padding:0 2cqw;background:var(--color-foreground);color:var(--color-background);
+.snp-cta{height:max(40px,4.4cqw);padding:0 2cqw;background:var(--snp-accent,var(--color-foreground));color:var(--snp-accent-fg,var(--color-background));
   font-weight:600;font-size:max(11px,1.15cqw);letter-spacing:.02em;white-space:nowrap;transition:transform .15s}
 .snp-cta:active{transform:scale(.96)}
 .snp-cta{position:relative;display:grid;place-items:center;min-width:max(150px,11.6cqw);overflow:hidden;transition:transform .15s,background .35s}
@@ -693,6 +738,13 @@ export default function SneakerProductHero({
   stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .45s .12s ease}
 .snp-cta[data-state="done"] .snp-cta-done svg{stroke-dashoffset:0}
 .snp-cta:disabled{opacity:.45;cursor:not-allowed}
+a.snp-cta{text-decoration:none}
+.snp-chips{display:flex;flex-wrap:wrap;gap:.7cqw;margin-top:1.5cqw}
+.snp-chip{padding:.55cqw 1.1cqw;border-radius:999px;border:1px solid color-mix(in oklab,var(--color-foreground) 35%,transparent);
+  font-size:max(10px,1cqw);font-weight:500;white-space:nowrap;transition:background .25s,color .25s,border-color .25s,transform .2s}
+.snp-chip:hover{transform:translateY(-1px);border-color:var(--snp-accent,var(--color-foreground))}
+.snp-chip[aria-pressed="true"]{background:var(--snp-accent,var(--color-foreground));border-color:var(--snp-accent,var(--color-foreground));color:var(--snp-accent-fg,var(--color-background))}
+.snp-chip[data-note]::after{content:" · " attr(data-note);opacity:.7;font-weight:400}
 .snp-like{position:relative;width:max(24px,2.4cqw);height:max(24px,2.4cqw);display:grid;place-items:center}
 .snp-like>svg{width:80%;height:80%;overflow:visible}
 .snp-like>svg path{fill:none;stroke:currentColor;stroke-width:1.8;transition:fill .3s,stroke .3s}
@@ -741,7 +793,7 @@ export default function SneakerProductHero({
   .snp-thumb{width:56px;height:36px}
   .snp-more{width:36px;height:36px}
   .snp-stage{order:-1;min-height:60cqw}
-  .snp-word{font-size:20cqw;top:0}
+  .snp-word{font-size:var(--snp-word-m,20cqw);top:0}
   .snp-info{display:contents}
   .snp-eyebrow{order:-3}
   .snp-title{order:-2;margin-top:4px;max-width:none}
@@ -752,6 +804,8 @@ export default function SneakerProductHero({
   .snp-row,.snp-colour{margin-top:18px}
   .snp-rating{gap:6px}
   .snp-swatches{margin-top:12px;gap:16px}
+  .snp-chips{gap:8px;margin-top:10px}
+  .snp-chip{padding:7px 12px;font-size:13px}
   .snp-actions{margin-top:22px;gap:20px}
   .snp-cta{flex:1}
   .snp-stock{margin-top:8px;gap:6px}
@@ -775,9 +829,9 @@ export default function SneakerProductHero({
 
       <div className="snp-body">
         <div className="snp-info">
-          <p className="snp-eyebrow">{eyebrow}</p>
-          <h2 className="snp-title">{title}</h2>
-          <p className="snp-desc">{description}</p>
+          <p className={"snp-eyebrow" + (listing ? " snp-fade" : "")} key={listing ? "e" + active : undefined}>{copy.eyebrow}</p>
+          <h2 className={"snp-title" + (listing ? " snp-fade" : "")} key={listing ? "t" + active : undefined}>{copy.title}</h2>
+          <p className={"snp-desc" + (listing ? " snp-fade" : "")} key={listing ? "d" + active : undefined}>{copy.description}</p>
           <div className="snp-thumbs">
             <span className="snp-thumbset" ref={thumbsRef}>
               {views.slice(0, 3).map((vw, i) => (
@@ -815,7 +869,7 @@ export default function SneakerProductHero({
               style={{ ["--t" as string]: tintOf(vv), visibility: i === active ? "visible" : "hidden" }}
               aria-hidden="true"
             >
-              {vv.name}
+              {vv.word ?? vv.name}
             </span>
           ))}
           <span className="snp-floor" ref={floorRef} aria-hidden="true" />
@@ -844,7 +898,7 @@ export default function SneakerProductHero({
                 }}
                 className="snp-shoe"
                 src={vv.src}
-                alt={i === active ? `${title} in ${vv.name}` : ""}
+                alt={i === active ? (listing ? vv.name : `${title} in ${vv.name}`) : ""}
                 aria-hidden={i === active ? undefined : true}
                 draggable={false}
                 style={{ visibility: i === active ? "visible" : "hidden" }}
@@ -868,84 +922,110 @@ export default function SneakerProductHero({
         </div>
 
         <div className="snp-buy">
-          <span className="snp-label">SIZE</span>
-          <div className="snp-sizes" role="group" aria-label="Size">
-            {sizes.map((s) => (
-              <button
-                key={s.label}
-                type="button"
-                className="snp-size"
-                aria-pressed={size === s.label}
-                disabled={avail(active, s.label).soldOut}
-                aria-label={avail(active, s.label).soldOut ? `Size ${s.label}, sold out` : `Size ${s.label}`}
-                onClick={() => setSize(s.label)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-          <span className="snp-stock" data-tone={stockTone} aria-live="polite">
-            {stockText}
-          </span>
-          <div className="snp-row">
-            <span className="snp-label">REVIEWS</span>
-            <span className="snp-rating">
-              <Stars value={stats.rating} />
-              <span className="snp-count" ref={countRef} aria-label="reviews">
-                ({first.current.reviews})
-              </span>
-            </span>
-          </div>
-          <div className="snp-row" aria-live="polite">
-            <span className="snp-label">PRICE</span>
-            <span className="snp-price" ref={priceRef}>
-              {currency + first.current.price}
-            </span>
-          </div>
-          <span className="snp-label snp-colour">COLOUR</span>
-          <div className="snp-swatches" role="group" aria-label="Colour">
-            {variants.map((vv, i) => (
-              <button
-                key={i}
-                type="button"
-                className="snp-swatch"
-                aria-pressed={i === active}
-                aria-label={vv.name}
-                style={{ ["--sw" as string]: vv.swatch }}
-                onClick={() => pick(i)}
-              />
-            ))}
-          </div>
-          <div className="snp-actions">
-            <button type="button" className="snp-cta" data-state={cart} onClick={addToCart} disabled={here.soldOut} aria-live="polite">
-              <span className="snp-cta-idle">{here.soldOut ? "SOLD OUT" : "ADD TO CART"}</span>
-              <span className="snp-cta-busy" aria-hidden="true">
-                <i />
-              </span>
-              <span className="snp-cta-done">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M5 12.5l4.2 4.2L19 7" />
-                </svg>
-                ADDED
-              </span>
-            </button>
-            <button ref={likeRef} type="button" className="snp-like" aria-pressed={liked} aria-label="Save to favourites" onClick={like}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d={HEART} />
-              </svg>
-              <span className="snp-burst" ref={burstRef} aria-hidden="true">
-                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-                  <svg key={i} viewBox="0 0 24 24">
-                    <path d={HEART} fill="currentColor" />
-                  </svg>
+          {listing ? (
+            <>
+              <span className="snp-label">HOUSE MODEL</span>
+              <div className="snp-chips" role="group" aria-label="House model">
+                {variants.map((vv, i) => (
+                  <button key={i} type="button" className="snp-chip" aria-pressed={i === active} onClick={() => pick(i)}>
+                    {vv.name}
+                  </button>
                 ))}
+              </div>
+              <div className="snp-actions">
+                {cur?.cta?.href ? (
+                  <a className="snp-cta" href={cur.cta.href}>
+                    <span className="snp-cta-idle">{cur.cta.label}</span>
+                  </a>
+                ) : (
+                  <button type="button" className="snp-cta" disabled>
+                    <span className="snp-cta-idle">{cur?.cta?.label ?? ""}</span>
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+          <span className="snp-label">SIZE</span>
+              <div className="snp-sizes" role="group" aria-label="Size">
+                {sizes.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    className="snp-size"
+                    aria-pressed={size === s.label}
+                    disabled={avail(active, s.label).soldOut}
+                    aria-label={avail(active, s.label).soldOut ? `Size ${s.label}, sold out` : `Size ${s.label}`}
+                    onClick={() => setSize(s.label)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <span className="snp-stock" data-tone={stockTone} aria-live="polite">
+                {stockText}
               </span>
-            </button>
-            <span className="snp-pill" ref={pillRef} role="status" aria-live="polite">
-              {liked ? <b>♥ </b> : null}
-              {likeMsg}
-            </span>
-          </div>
+              <div className="snp-row">
+                <span className="snp-label">REVIEWS</span>
+                <span className="snp-rating">
+                  <Stars value={stats.rating} />
+                  <span className="snp-count" ref={countRef} aria-label="reviews">
+                    ({first.current.reviews})
+                  </span>
+                </span>
+              </div>
+              <div className="snp-row" aria-live="polite">
+                <span className="snp-label">PRICE</span>
+                <span className="snp-price" ref={priceRef}>
+                  {currency + first.current.price}
+                </span>
+              </div>
+              <span className="snp-label snp-colour">COLOUR</span>
+              <div className="snp-swatches" role="group" aria-label="Colour">
+                {variants.map((vv, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className="snp-swatch"
+                    aria-pressed={i === active}
+                    aria-label={vv.name}
+                    style={{ ["--sw" as string]: vv.swatch }}
+                    onClick={() => pick(i)}
+                  />
+                ))}
+              </div>
+              <div className="snp-actions">
+                <button type="button" className="snp-cta" data-state={cart} onClick={addToCart} disabled={here.soldOut} aria-live="polite">
+                  <span className="snp-cta-idle">{here.soldOut ? "SOLD OUT" : "ADD TO CART"}</span>
+                  <span className="snp-cta-busy" aria-hidden="true">
+                    <i />
+                  </span>
+                  <span className="snp-cta-done">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M5 12.5l4.2 4.2L19 7" />
+                    </svg>
+                    ADDED
+                  </span>
+                </button>
+                <button ref={likeRef} type="button" className="snp-like" aria-pressed={liked} aria-label="Save to favourites" onClick={like}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={HEART} />
+                  </svg>
+                  <span className="snp-burst" ref={burstRef} aria-hidden="true">
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                      <svg key={i} viewBox="0 0 24 24">
+                        <path d={HEART} fill="currentColor" />
+                      </svg>
+                    ))}
+                  </span>
+                </button>
+                <span className="snp-pill" ref={pillRef} role="status" aria-live="polite">
+                  {liked ? <b>♥ </b> : null}
+                  {likeMsg}
+                </span>
+              </div>
+                </>
+          )}
         </div>
 
         <div className="snp-toast" ref={toastRef} role="status" aria-live="polite">
