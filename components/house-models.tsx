@@ -1,3 +1,4 @@
+import { SectionSeam } from '@/components/ui/section-seam';
 import SneakerProductHero, { type SneakerVariant, type SneakerView } from '@/components/ui/sneaker-product-hero';
 
 // TEMPORARY: sneaker placeholder so the layout and motion can be reviewed on the site.
@@ -41,7 +42,8 @@ const DARK = {
 
 export function HouseModels() {
   return (
-    <div id="house-models" className="bg-night">
+    <div id="house-models" className="relative isolate">
+      <SectionSeam />
       <SneakerProductHero variants={variants} defaultVariant={1} style={DARK} />
     </div>
   );
