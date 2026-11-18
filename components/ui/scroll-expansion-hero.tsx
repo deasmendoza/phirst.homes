@@ -9,7 +9,8 @@
 //  - a page opened on a section address (e.g. /calculator) starts already expanded
 //  - keyboard keys expand it too, and the empty content block is not drawn when there are no children
 //  - on desktop the picture keeps clear of the fixed navigation
-//  - the words rise and fade as the picture opens, instead of sliding off to the sides
+//  - "Scroll to explore" rises and fades as the picture opens, instead of sliding off to the side
+//  - the title has a dark outline and shadow so it stays readable over a busy picture
 //  - a title written "First|Rest" sets its two lines explicitly
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -187,7 +188,8 @@ const ScrollExpandMedia = ({
 
   const mediaWidth = 300 + scrollProgress * (isMobileState ? 650 : 1250);
   const mediaHeight = 400 + scrollProgress * (isMobileState ? 200 : 400);
-  // The words rise up and fade out as the picture opens (instead of sliding off to the sides).
+  // The title slides off to the sides as the picture opens; "Scroll to explore" rises and fades.
+  const textTranslateX = scrollProgress * (isMobileState ? 180 : 150);
   const textRise = `translateY(-${(scrollProgress * 60).toFixed(2)}vh)`;
   const textFade = clamp01(1 - scrollProgress * 1.6);
 
@@ -197,7 +199,7 @@ const ScrollExpandMedia = ({
     : [title ? title.split(" ")[0] : "", title ? title.split(" ").slice(1).join(" ") : ""];
 
   const titleClass =
-    "font-serif text-[clamp(40px,6.2vw,108px)] font-semibold leading-[1.05] transition-none [text-shadow:0_2px_28px_rgba(0,0,0,0.7)]";
+    "font-serif text-[clamp(40px,6.2vw,108px)] font-semibold leading-[1.05] transition-none [paint-order:stroke_fill] [-webkit-text-stroke:0.06em_rgba(5,7,13,0.9)] [text-shadow:0_3px_6px_rgba(0,0,0,0.85),0_0_36px_rgba(0,0,0,0.75)]";
 
   return (
     <div
@@ -347,13 +349,13 @@ const ScrollExpandMedia = ({
               >
                 <motion.h2
                   className={titleClass}
-                  style={{ color: GOLD, transform: textRise, opacity: textFade }}
+                  style={{ color: GOLD, transform: `translateX(-${textTranslateX}vw)` }}
                 >
                   {firstWord}
                 </motion.h2>
                 <motion.h2
                   className={`${titleClass} text-center`}
-                  style={{ color: "#ffffff", transform: textRise, opacity: textFade }}
+                  style={{ color: "#ffffff", transform: `translateX(${textTranslateX}vw)` }}
                 >
                   {restOfTitle}
                 </motion.h2>
