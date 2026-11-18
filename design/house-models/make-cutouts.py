@@ -38,6 +38,27 @@ def checker_masks(rgb):
     return core, light
 
 
+# Open carports show the checkerboard through the house. Where it is too small or too broken for
+# the automatic pass, these boxes (x0, y0, x1, y1 on the finished cut-out) are painted as shade.
+PATCHES = {
+    "cartland-54": [(78, 179, 125, 218)],
+    "charles-150": [(140, 244, 181, 281)],
+}
+
+
+def patch(im, boxes):
+    arr = np.asarray(im).copy()
+    for x0, y0, x1, y1 in boxes:
+        box = np.zeros(arr.shape[:2], bool)
+        box[y0:y1, x0:x1] = True
+        ring = ndi.binary_dilation(box, iterations=6) & ~box & (arr[..., 3] > 200)
+        shade = (np.median(arr[ring][:, :3], axis=0) * 0.5).astype(np.uint8)
+        soft = cv2.GaussianBlur(box.astype(np.float32), (0, 0), 1.5)[..., None]
+        arr[..., :3] = (arr[..., :3] * (1 - soft) + shade * soft).astype(np.uint8)
+        arr[..., 3] = np.maximum(arr[..., 3], (soft[..., 0] * 255).astype(np.uint8))
+    return Image.fromarray(arr, "RGBA")
+
+
 def cut(path, out_path=None, crop=None):
     img = Image.open(path).convert("RGB")
     if crop:
@@ -71,6 +92,28 @@ def cut(path, out_path=None, crop=None):
         keep = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s > 0.01 * fg.sum()])
         fg = keep
     fg = ndi.binary_fill_holes(fg)
+
+    # Checkerboard seen through an open carport (or between walls) is still checkerboard: clear any
+    # pocket of it that is big enough to be more than a window frame, so it shows the page behind.
+    gray16 = rgb.astype(np.int16).mean(axis=2)
+    sat16 = rgb.max(axis=2).astype(np.int16) - rgb.min(axis=2)
+    corner = gray16[:60, :60]
+    tone = float(np.median(corner[corner < 240]))
+    wf = ndi.uniform_filter(((sat16 < 16) & (gray16 >= 243)).astype(np.float32), 7)
+    gf = ndi.uniform_filter(((sat16 < 16) & (np.abs(gray16 - tone) <= 14)).astype(np.float32), 7)
+    pocket = (wf > 0.2) & (gf > 0.2) & (wf + gf > 0.85)
+    plab, pn = ndi.label(pocket)
+    if pn:
+        psizes = ndi.sum(pocket, plab, range(1, pn + 1))
+        big = np.isin(plab, [i + 1 for i, sz in enumerate(psizes) if sz >= 25])
+        pocket_px = ndi.binary_dilation(big, iterations=4)
+        # Paint the pocket with the dark warm tone around it, so a carport reads as a shaded interior.
+        ring = ndi.binary_dilation(pocket_px, iterations=5) & ~pocket_px & fg
+        if ring.any():
+            tone_rgb = np.median(rgb[ring], axis=0) * 0.55
+            rgb = rgb.copy()
+            rgb[pocket_px] = tone_rgb.astype(np.uint8)
+            rgb = cv2.GaussianBlur(rgb, (0, 0), 1.2) * 0 + np.where(pocket_px[..., None], cv2.GaussianBlur(rgb, (0, 0), 1.2), rgb)
     alpha = cv2.GaussianBlur(fg.astype(np.float32), (0, 0), 0.8)
     alpha = np.clip((alpha - 0.15) / 0.7, 0, 1)
 
@@ -79,6 +122,8 @@ def cut(path, out_path=None, crop=None):
     box = im.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
     if box:
         im = im.crop(box)
+    if out_path and out_path.stem in PATCHES:
+        im = patch(im, PATCHES[out_path.stem])
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         im.save(out_path, "WEBP", quality=88, method=6)
@@ -95,4 +140,12 @@ if __name__ == "__main__":
     w, h = three
     for name, box in {"unna": (0, 0, 358, h), "brenna": (358, 0, 720, h), "dua": (720, 0, w, h)}.items():
         cut(SRC / "unna-brenna-dua.webp", OUT / f"{name}.webp", crop=box)
+    # Premium: two more pictures with several houses each.
+    for src, parts in {
+        "cartland-charles-christie.webp": {"cartland-54": (0, 366), "charles-70": (366, 666), "christie-90": (666, None)},
+        "charles150-corin.webp": {"charles-150": (0, 524), "corin-120": (524, None)},
+    }.items():
+        w, h = Image.open(SRC / src).size
+        for name, (x0, x1) in parts.items():
+            cut(SRC / src, OUT / f"{name}.webp", crop=(x0, 0, x1 or w, h))
     print("done:", sorted(p.name for p in OUT.glob("*.webp")))

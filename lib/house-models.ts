@@ -29,9 +29,8 @@ export interface House {
   images: string[];
 }
 
-// Cut-outs made by design/house-models/make-cutouts.py. Premium models still use a placeholder render.
+// Cut-outs made by design/house-models/make-cutouts.py.
 const M = (name: string) => `/assets/img/models/${name}.webp`;
-const P = (n: number) => `/assets/img/hero/model-${n}.webp`;
 
 // The first model of each type is the one shown when its type is chosen.
 export const HOUSES: House[] = [
@@ -42,11 +41,11 @@ export const HOUSES: House[] = [
   { name: 'Brenna', type: 'bungalow', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', images: [M('brenna')] },
   { name: 'Unna', type: 'single', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [M('unna')] },
   { name: 'Dua', type: 'single', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', images: [M('dua')] },
-  { name: 'Corin 120', type: 'premium', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, images: [P(6)] },
-  { name: 'Cartland 54', type: 'premium', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [P(5)] },
-  { name: 'Charles 70', type: 'premium', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, images: [P(5)] },
-  { name: 'Christie 90', type: 'premium', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, images: [P(5)] },
-  { name: 'Charles 150', type: 'premium', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', images: [P(5)] },
+  { name: 'Corin 120', type: 'premium', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, images: [M('corin-120')] },
+  { name: 'Cartland 54', type: 'premium', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [M('cartland-54')] },
+  { name: 'Charles 70', type: 'premium', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, images: [M('charles-70')] },
+  { name: 'Christie 90', type: 'premium', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, images: [M('christie-90')] },
+  { name: 'Charles 150', type: 'premium', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', images: [M('charles-150')] },
 ];
 
 export const HOUSE_TYPES: { id: HouseType; label: string }[] = [
