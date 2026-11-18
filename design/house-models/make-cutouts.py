@@ -59,8 +59,31 @@ def patch(im, boxes):
     return Image.fromarray(arr, "RGBA")
 
 
+def has_alpha(img):
+    """True when the picture already carries real transparency (not a checkerboard painted in)."""
+    if img.mode not in ("RGBA", "LA", "PA") and "transparency" not in img.info:
+        return False
+    lo, _ = img.convert("RGBA").getchannel("A").getextrema()
+    return lo < 250
+
+
+def trim(im, out_path):
+    box = im.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
+    if box:
+        im = im.crop(box)
+    if out_path:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        im.save(out_path, "WEBP", quality=90, method=6, lossless=False)
+    return im
+
+
 def cut(path, out_path=None, crop=None):
-    img = Image.open(path).convert("RGB")
+    src = Image.open(path)
+    if has_alpha(src):
+        # Real transparency: only crop and trim. Nothing is cut out or repainted.
+        rgba = src.convert("RGBA")
+        return trim(rgba.crop(crop) if crop else rgba, out_path)
+    img = src.convert("RGB")
     if crop:
         img = img.crop(crop)
     rgb = np.asarray(img)
