@@ -4,11 +4,13 @@ import { HeroScroll } from '@/components/hero-scroll';
 import { pickHero } from '@/src/hero-config';
 import { MobileHeader } from '@/components/mobile-header';
 import { Calculator } from '@/components/calculator';
+import { HouseModels } from '@/components/house-models';
 import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
 import { Careers } from '@/components/careers';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
+import { BackgroundPixelStars } from '@/components/ui/background-pixel-stars';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -24,7 +26,7 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
+const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
 const normalize = (path: string) => path.replace(/\/+$/, '') || '/';
 
 function scrollToPath(path: string, behavior: ScrollBehavior) {
@@ -73,16 +75,23 @@ export default function App() {
   useSectionRoutes();
   return (
     <>
+      <BackgroundPixelStars />
       <MobileHeader />
       <SiteNav />
-      <main>
-        {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
+      <main className="relative z-10">
+        {/* The hero keeps its own solid night backdrop: the shared star background starts below it. */}
+        <div className="bg-night">
+          {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
+        </div>
+        <HouseModels />
         <Locations />
         <Calculator />
         <BookViewing />
         <Careers />
       </main>
-      <SiteFooter />
+      <div className="relative z-10">
+        <SiteFooter />
+      </div>
     </>
   );
 }

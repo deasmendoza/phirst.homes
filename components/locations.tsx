@@ -1,3 +1,4 @@
+import { SectionSeam } from '@/components/ui/section-seam';
 import { useMemo, useState } from 'react';
 import { ISLANDS, LOCATIONS, type Island, type LocationGroup } from '@/lib/locations';
 import { MAP_HEIGHT, MAP_WIDTH, PH_PATH, project } from '@/lib/ph-map';
@@ -73,13 +74,8 @@ export function Locations() {
   };
 
   return (
-    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden bg-night px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-10 lg:pt-[92px]">
-      {/* Contour-line texture, kept faint: it only adds depth behind the map and the cards */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[#070b16]" aria-hidden="true">
-        <img src="/assets/img/locations-bg.webp" alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.22]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(7,11,22,0.25),rgba(7,11,22,0.72)_78%),linear-gradient(180deg,#05070d,rgba(5,7,13,0)_20%,rgba(10,18,36,0)_78%,#0a1224)]" />
-      </div>
-
+    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-10 lg:pt-[92px]">
+      <SectionSeam />
       <div className="mx-auto grid w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
         {/* ---------- Map (desktop only) ---------- */}
         <div className="hidden lg:block">

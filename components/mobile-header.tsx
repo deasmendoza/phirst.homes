@@ -1,5 +1,5 @@
 const LINKS = [
-  ['House Models', '/house-models/'],
+  ['House Models', '/house-models'],
   ['Locations', '/locations'],
   ['Calculator', '/calculator'],
   ['Book a Viewing', '/book-a-viewing'],
