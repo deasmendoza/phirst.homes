@@ -20,8 +20,7 @@ export function HeroScroll() {
       mediaSrc={IMAGES.media}
       mediaAlt={IMAGES.mediaAlt}
       bgImageSrc={IMAGES.background}
-      title="PHirst Homes"
-      date="Team M-BigTime"
+      title="Team M|BIGTIME"
       scrollToExpand="Scroll to explore"
       startExpanded={openedOnSection()}
     />

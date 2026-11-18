@@ -9,6 +9,8 @@
 //  - a page opened on a section address (e.g. /calculator) starts already expanded
 //  - keyboard keys expand it too, and the empty content block is not drawn when there are no children
 //  - on desktop the picture keeps clear of the fixed navigation
+//  - the words rise and fade as the picture opens, instead of sliding off to the sides
+//  - a title written "First|Rest" sets its two lines explicitly
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
@@ -185,10 +187,14 @@ const ScrollExpandMedia = ({
 
   const mediaWidth = 300 + scrollProgress * (isMobileState ? 650 : 1250);
   const mediaHeight = 400 + scrollProgress * (isMobileState ? 200 : 400);
-  const textTranslateX = scrollProgress * (isMobileState ? 180 : 150);
+  // The words rise up and fade out as the picture opens (instead of sliding off to the sides).
+  const textRise = `translateY(-${(scrollProgress * 60).toFixed(2)}vh)`;
+  const textFade = clamp01(1 - scrollProgress * 1.6);
 
-  const firstWord = title ? title.split(" ")[0] : "";
-  const restOfTitle = title ? title.split(" ").slice(1).join(" ") : "";
+  // "First|Rest" sets the two lines of the title explicitly; otherwise the first word is the top line.
+  const [firstWord, restOfTitle] = title?.includes("|")
+    ? (title.split("|", 2) as [string, string])
+    : [title ? title.split(" ")[0] : "", title ? title.split(" ").slice(1).join(" ") : ""];
 
   const titleClass =
     "font-serif text-[clamp(40px,6.2vw,108px)] font-semibold leading-[1.05] transition-none [text-shadow:0_2px_28px_rgba(0,0,0,0.7)]";
@@ -318,7 +324,7 @@ const ScrollExpandMedia = ({
                   {date && (
                     <p
                       className="text-[clamp(16px,1.6vw,28px)] font-semibold tracking-[0.2em] uppercase [text-shadow:0_2px_16px_rgba(0,0,0,0.9)]"
-                      style={{ color: GOLD, transform: `translateX(-${textTranslateX}vw)` }}
+                      style={{ color: GOLD, transform: textRise, opacity: textFade }}
                     >
                       {date}
                     </p>
@@ -326,7 +332,7 @@ const ScrollExpandMedia = ({
                   {scrollToExpand && (
                     <p
                       className="font-semibold text-center tracking-[0.2em] uppercase text-sm md:text-base text-white [text-shadow:0_2px_16px_rgba(0,0,0,0.9)]"
-                      style={{ transform: `translateX(${textTranslateX}vw)` }}
+                      style={{ transform: textRise, opacity: textFade }}
                     >
                       {scrollToExpand}
                     </p>
@@ -341,13 +347,13 @@ const ScrollExpandMedia = ({
               >
                 <motion.h2
                   className={titleClass}
-                  style={{ color: GOLD, transform: `translateX(-${textTranslateX}vw)` }}
+                  style={{ color: GOLD, transform: textRise, opacity: textFade }}
                 >
                   {firstWord}
                 </motion.h2>
                 <motion.h2
                   className={`${titleClass} text-center`}
-                  style={{ color: "#ffffff", transform: `translateX(${textTranslateX}vw)` }}
+                  style={{ color: "#ffffff", transform: textRise, opacity: textFade }}
                 >
                   {restOfTitle}
                 </motion.h2>
