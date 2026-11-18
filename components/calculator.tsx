@@ -5,6 +5,7 @@ import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, typ
 import {
   PROVINCE_ORDER,
   blockLot,
+  displayTurnover,
   loadInventory,
   phaseLabel,
   projectLabel,
@@ -173,7 +174,7 @@ export function Calculator() {
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
   const noPagibig = type !== '' && !pagibigAvailable(type);
-  const terms = useMemo(() => (financing ? termsFor(financing, unit?.terms ?? '') : []), [financing, unit]);
+  const terms = useMemo(() => (financing ? termsFor(financing, unit) : []), [financing, unit]);
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
   const needsYears = financing !== '' && financing !== 'cash';
@@ -414,7 +415,7 @@ export function Calculator() {
                       {termsLabel(result.unit.terms)}
                     </div>
                   )}
-                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {result.unit.turnover}</div>}
+                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {displayTurnover(result.unit.turnover)}</div>}
                   {result.unit.houseCon && <div className="flex items-center gap-2.5"><Icon name="tools" className="size-[18px] text-gold" /> Construction: {result.unit.houseCon}</div>}
                   {asOf && <div className="pt-1.5 text-[13px] text-white/70">Inventory as of {asOf}</div>}
                 </div>

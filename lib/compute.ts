@@ -26,6 +26,8 @@ export interface Term {
   label: string;
   /** The template's "SPOT 5% RS MONTH" sheet: spot 5% paid on reservation, as RSBS units require. */
   rsbs?: boolean;
+  /** Offered only for some models and only while the unit is far enough from completion; see termsFor. */
+  lowDp?: boolean;
   schedule: (net: number, rf: number, beforeVat: number) => Schedule;
 }
 
@@ -86,6 +88,9 @@ const spotOnly = (pct: number) => (net: number, rf: number): Schedule => ({
 });
 
 const PAGIBIG: Term[] = [
+  // Owner's instruction (Nov 2026): Alora, Aurora and Amani also get 10% in 12 months under Pag-IBIG.
+  // Same formula as the bank's "10% IN 12 MOS" sheet.
+  { id: 'pif-10-12', label: '10% in 12 months', lowDp: true, schedule: installment(0.1, 12) },
   { id: 'pif-20-12', label: '20% in 12 months', schedule: installment(0.2, 12) },
   { id: 'pif-20-18', label: '20% in 18 months', schedule: installment(0.2, 18) },
   { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', rsbs: true, schedule: spotThen(1, 0.1, 15) },
@@ -168,7 +173,7 @@ export const TERMS: Record<Financing, Term[]> = { pagibig: PAGIBIG, bank: BANK, 
 
 export const YEARS: Record<Financing, number[]> = {
   pagibig: [30, 25, 20, 15, 10],
-  bank: [15, 10, 5],
+  bank: [20, 15, 10, 5], // 20 years added on the owner's instruction (Nov 2026); same 10% rate
   inhouse: [10, 5],
   cash: [],
 };
@@ -231,14 +236,36 @@ export function reservationFee(unitType: string, project: string): number | null
  */
 export const pagibigAvailable = (unitType: string) => !/^(UNNA|DUA|BRENNA|CARTLAND|CHARLES|CHRISTIE|CORIN)\b/.test(unitType.toUpperCase());
 
+/** Months from this month to a "Jun 2028"-style date; null when the date is blank or unreadable. */
+export function monthsUntil(date: string, now = new Date()): number | null {
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(date.trim());
+  if (!m) return null;
+  const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(m[1].toLowerCase());
+  if (month < 0) return null;
+  return Number(m[2]) * 12 + month - (now.getFullYear() * 12 + now.getMonth());
+}
+
+const LOW_DP_MODELS = /^(ALORA|AURORA|AMANI)\b/;
+
 /**
- * Payment terms offered for a unit. RSBS units (reservation sale and book sale: spot 5%
- * downpayment on reservation) get only the reservation-month spot term, not the Memo
- * Terms instalment plans. Cash terms are left as they are: the template has no RSBS
- * version of them.
+ * Payment terms offered for a unit.
+ * - RSBS units (reservation sale and book sale: spot 5% downpayment on reservation) get only
+ *   the reservation-month spot term, not the Memo Terms instalment plans. Cash terms are left
+ *   as they are: the template has no RSBS version of them.
+ * - Pag-IBIG "10% in 12 months" is only for Alora, Aurora and Amani, and only when the unit's
+ *   estimated date in the inventory is at least 12 months away (a unit near completion cannot
+ *   spread its downpayment over a year). A unit with no date in the inventory is treated as far
+ *   from completion.
  */
-export function termsFor(financing: Financing, unitTerms: string): Term[] {
-  const all = TERMS[financing];
-  if (financing === 'cash' || !/RSBS/i.test(unitTerms)) return all;
+export function termsFor(financing: Financing, unit?: { terms: string; type: string; turnover: string }, now = new Date()): Term[] {
+  let all = TERMS[financing];
+  if (unit) {
+    const months = monthsUntil(unit.turnover, now);
+    const lowDpOk = LOW_DP_MODELS.test(unit.type.toUpperCase()) && (months === null || months >= 12);
+    if (!lowDpOk) all = all.filter((t) => !t.lowDp);
+  } else {
+    all = all.filter((t) => !t.lowDp);
+  }
+  if (financing === 'cash' || !unit || !/RSBS/i.test(unit.terms)) return all;
   return all.filter((t) => t.rsbs);
 }
