@@ -21,7 +21,7 @@ transparency and cannot be cut cleanly.
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from scipy import ndimage as ndi
 
 HERE = Path(__file__).parent
@@ -146,6 +146,54 @@ def trim_edges(im, name):
     return im.crop((int(im.width * left), 0, int(im.width * (1 - right)), im.height))
 
 
+# Retouching of the finished cut-outs (coordinates are pixels of the finished image).
+#   clear: boxes (x0, y0, x1, y1) made fully transparent: road or fence of the neighbouring lot.
+#   text:  (box to wipe, new text, left x, baseline y, cap height px): the sign on the gate post is
+#          wiped by stretching the plate colour down through the text rows, then lettered again.
+FONT = "/usr/share/fonts/opentype/inter/Inter-{}.otf"
+RETOUCH = {
+    "cartland-54": {
+        "clear": [(0, 478, 46, 573), (682, 430, 692, 573)],
+        "text": [((53, 440, 141, 457), "CARTLAND 54", 56, 453, 10, 80, "SemiBold")],
+    },
+    "charles-150": {
+        "clear": [(0, 0, 165, 661), (0, 598, 171, 661), (0, 642, 965, 661)],
+        "text": [((186, 502, 264, 523), "CHARLES 150", 191, 518, 11, 80, "Medium")],
+    },
+}
+
+
+def retouch(im, name):
+    spec = RETOUCH.get(name)
+    if not spec:
+        return im
+    arr = np.asarray(im).copy()
+    for x0, y0, x1, y1 in spec.get("clear", []):
+        arr[y0:y1, x0:x1, 3] = 0
+    im = Image.fromarray(arr, "RGBA")
+    for (x0, y0, x1, y1), text, left, base, cap, width, weight in spec.get("text", []):
+        arr = np.asarray(im).copy().astype(np.float32)
+        top, bot = arr[y0 - 1, x0:x1], arr[y1, x0:x1]
+        t = np.linspace(0, 1, y1 - y0)[:, None, None]
+        arr[y0:y1, x0:x1] = top[None] * (1 - t) + bot[None] * t
+        im = Image.fromarray(arr.astype(np.uint8), "RGBA")
+        # letter it 6x larger, then shrink, so the edges are as soft as the rest of the picture
+        k = 6
+        font = ImageFont.truetype(FONT.format(weight), int(cap / 0.727 * k))
+        l, t_, r, b = font.getbbox(text)
+        layer = Image.new("L", (r + 4 * k, int(cap * 2.4 * k)), 0)
+        ImageDraw.Draw(layer).text((2 * k, int(cap * 0.7 * k) - t_), text, font=font, fill=255)
+        box = layer.getbbox()
+        layer = layer.crop(box)
+        w = width or round(layer.width / k)
+        layer = layer.resize((w, max(1, round(layer.height / k))), Image.LANCZOS)
+        layer = layer.point(lambda v: int(v * 0.92))
+        white = Image.new("RGBA", layer.size, (238, 232, 226, 255))
+        white.putalpha(layer)
+        im.alpha_composite(white, (left, base - layer.height))
+    return im
+
+
 # source file -> output names, left to right
 SOURCES = {
     "calista.png": ["calista"],
@@ -169,5 +217,5 @@ if __name__ == "__main__":
         cuts = [0, *split_points(rgba, len(names)), rgba.width]
         assert len(cuts) == len(names) + 1, f"{file}: found {len(cuts) - 2} gaps for {len(names)} houses"
         for name, x0, x1 in zip(names, cuts, cuts[1:]):
-            save(trim(trim_edges(drop_edge_slivers(rgba.crop((x0, 0, x1, rgba.height))), name)), name)
+            save(retouch(trim(trim_edges(drop_edge_slivers(rgba.crop((x0, 0, x1, rgba.height))), name)), name), name)
     print("done:", sorted(p.name for p in OUT.glob("*.webp")))
