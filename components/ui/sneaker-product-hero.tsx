@@ -665,6 +665,9 @@ export default function SneakerProductHero({
 .snp-extra{margin-top:2.4cqw}
 .snp-root[data-mode="listing"] .snp-extra .snp-desc{margin-top:1cqw}
 .snp-root[data-mode="listing"] .snp-desc{margin-top:2.4cqw}
+.snp-root[data-mode="listing"] .snp-shoe{object-position:50% 100%}
+.snp-root[data-mode="listing"] .snp-shoe.snp-reflect{transform-origin:50% 100%;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 45%,#000 100%);mask-image:linear-gradient(to bottom,transparent 45%,#000 100%)}
 .snp-root[data-mode="listing"] .snp-body{grid-template-columns:20cqw minmax(0,1fr) 25cqw;padding-right:5cqw}
 .snp-root[data-mode="listing"] .snp-title::first-line{font-size:max(12px,1.5cqw);font-weight:500;letter-spacing:0;color:var(--color-muted-foreground)}
 .snp-fade{animation:snp-fade .5s cubic-bezier(.2,.8,.2,1) both}
