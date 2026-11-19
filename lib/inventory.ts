@@ -94,3 +94,17 @@ export function seriesImage(type: string) {
   const n = /^CALISTA/.test(t) ? 1 : /^AMANI/.test(t) ? 2 : /^ALORA/.test(t) ? 3 : /^UNNA/.test(t) ? 4 : /^(CARTLAND|CHARLES|CHRISTIE)/.test(t) ? 5 : /^CORIN/.test(t) ? 6 : 0;
   return n ? `/assets/img/hero/model-${n}.webp` : null;
 }
+
+/**
+ * Turnover date as shown to buyers: the inventory's date plus 3 months, because handovers
+ * usually run late (owner's instruction, Nov 2026). "Jun 2028" becomes "Sep 2028".
+ * Anything that is not a "Mon YYYY" date is shown as it is.
+ */
+export function displayTurnover(date: string): string {
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(date.trim());
+  const month = m ? MONTHS.findIndex((x) => x.toLowerCase() === m[1].toLowerCase()) : -1;
+  if (!m || month < 0) return date;
+  const total = Number(m[2]) * 12 + month + 3;
+  return `${MONTHS[total % 12]} ${Math.floor(total / 12)}`;
+}

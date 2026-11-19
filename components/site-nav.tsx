@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 const LINKS = [
-  { label: 'House Models', href: '/house-models/', section: 'hero' },
+  { label: 'House Models', href: '/house-models', section: 'house-models' },
   { label: 'Locations', href: '/locations', section: 'locations' },
   { label: 'Calculator', href: '/calculator', section: 'calculator' },
   { label: 'Book a Viewing', href: '/book-a-viewing', section: 'book-a-viewing' },
@@ -12,7 +12,7 @@ const LINKS = [
 /**
  * Desktop navigation, fixed to the top of every section. Over the hero it is transparent
  * and sized to the screen; once the hero has scrolled away it becomes a compact dark bar.
- * The logo always returns to the top of the homepage. (Below 1024px, MobileHeader does this job.)
+ * (Below 1024px, MobileHeader does this job.)
  */
 export function SiteNav() {
   const [section, setSection] = useState('hero');
@@ -24,7 +24,7 @@ export function SiteNav() {
       // The section whose top has most recently passed under the bar.
       const line = 96;
       let current = 'hero';
-      for (const id of ['locations', 'calculator', 'book-a-viewing', 'careers', 'contact']) {
+      for (const id of ['house-models', 'locations', 'calculator', 'book-a-viewing', 'careers', 'contact']) {
         const el = document.getElementById(id);
         // The footer is shorter than the screen, so it counts as "in view" once it is half way up.
         if (el && el.getBoundingClientRect().top <= (id === 'contact' ? window.innerHeight / 2 : line)) current = id;
@@ -54,13 +54,6 @@ export function SiteNav() {
           : 'border-b border-transparent py-[clamp(14px,1.6vw,30px)] text-[clamp(13px,1.45vw,26px)]'
       }`}
     >
-      <a
-        href="/"
-        aria-label="PHirst Homes: back to the top of the homepage"
-        className="absolute left-[clamp(16px,2.2vw,44px)] top-1/2 -translate-y-1/2 rounded-full transition hover:brightness-125 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-soft"
-      >
-        <img src="/assets/img/ph-badge-512.png" alt="PHirst Homes" width={512} height={512} className={`w-auto transition-[height] duration-300 ${compact ? 'h-12' : 'h-[3.1em]'}`} />
-      </a>
       <nav aria-label="Main" className="flex items-center gap-[0.85em]">
         {LINKS.map((l) => (
           <a key={l.label} href={l.href} aria-current={l.section === section ? 'true' : undefined} className={`hero-pill ${l.section === section ? 'hero-pill--primary' : ''}`}>

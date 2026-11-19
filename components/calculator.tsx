@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalculatorBackdrop } from '@/components/calculator-backdrop';
 import { Select, type Option } from '@/components/ui/select';
-import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
+import { SectionSeam } from '@/components/ui/section-seam';
+import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
   blockLot,
+  displayTurnover,
   loadInventory,
   phaseLabel,
   projectLabel,
@@ -173,7 +174,7 @@ export function Calculator() {
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
   const noPagibig = type !== '' && !pagibigAvailable(type);
-  const terms = useMemo(() => (financing ? termsFor(financing, unit?.terms ?? '') : []), [financing, unit]);
+  const terms = useMemo(() => (financing ? termsFor(financing, unit) : []), [financing, unit]);
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
   const needsYears = financing !== '' && financing !== 'cash';
@@ -191,15 +192,14 @@ export function Calculator() {
     const rf = reservationFee(unit.type, unit.project);
     if (rf == null) return { unit, rf: null } as const;
 
-    const net = unit.tcp; // the sheet's TCP column already includes VAT
-    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - net) < 1;
-    const vat = vatOk ? (unit.vat as number) : 0;
-    const beforeVat = net - vat;
+    // The sheet's TCP column already includes VAT.
+    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - unit.tcp) < 1;
+    const { tcp, discount, vat, beforeVat, net } = price(unit.tcp, vatOk ? (unit.vat as number) : 0, term);
 
     const schedule = term.schedule(net, rf, beforeVat);
     const balance = net - schedule.total;
     const amort = needsYears ? loan(financing, balance, net, Number(years)) : null;
-    return { unit, rf, net, vat, beforeVat, schedule, balance, amort } as const;
+    return { unit, rf, tcp, discount, discountLabel: term.discount?.label ?? '', net, vat, beforeVat, schedule, balance, amort } as const;
   }, [unit, financing, term, years, needsYears]);
 
   const reset = () => {
@@ -242,8 +242,8 @@ export function Calculator() {
     : null;
 
   return (
-    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden bg-navy px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:pb-9 lg:pt-[88px]">
-      <CalculatorBackdrop />
+    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:pb-9 lg:pt-[88px]">
+      <SectionSeam />
 
       <div className="mx-auto grid w-full max-w-[1480px] items-stretch gap-6 lg:grid-cols-[minmax(410px,460px)_minmax(0,1fr)]">
         {/* ---------- Inputs ---------- */}
@@ -414,7 +414,7 @@ export function Calculator() {
                       {termsLabel(result.unit.terms)}
                     </div>
                   )}
-                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {result.unit.turnover}</div>}
+                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {displayTurnover(result.unit.turnover)}</div>}
                   {result.unit.houseCon && <div className="flex items-center gap-2.5"><Icon name="tools" className="size-[18px] text-gold" /> Construction: {result.unit.houseCon}</div>}
                   {asOf && <div className="pt-1.5 text-[13px] text-white/70">Inventory as of {asOf}</div>}
                 </div>
@@ -425,10 +425,16 @@ export function Calculator() {
                 <div>
                   <SectionTitle icon="coins">Price Details</SectionTitle>
                   <dl className="grid overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d] sm:grid-flow-col sm:auto-cols-fr">
-                    <PriceCell label="Total Contract Price (TCP)" value={money(result.beforeVat)} />
+                    <PriceCell label="Total Contract Price (TCP)" value={money(result.tcp)} />
+                    {result.discount > 0 && <PriceCell label={`Less: ${result.discountLabel}`} value={`− ${money(result.discount)}`} />}
                     {result.vat > 0 && <PriceCell label="VAT (12%)" value={money(result.vat)} />}
                     <PriceCell label="Net Contract Price" value={money(result.net)} highlight />
                   </dl>
+                  {result.discount > 0 && (
+                    <p className="mt-1.5 text-[12px] text-white/60">
+                      Discount applies only if payment and requirements are completed within the stated period; otherwise it is subject to reassessment.
+                    </p>
+                  )}
                 </div>
 
                 {/* Downpayment | Balance & Monthly Amortization: two equal columns */}
