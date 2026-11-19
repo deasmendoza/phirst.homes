@@ -6,8 +6,8 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# /how-to-buy is the homepage, scrolled to the calculator and reservation requirements
-# (no "#" in the address). /calculator and /requirements open the same section.
+# /calculator and /requirements are the homepage, scrolled to the calculator section
+# (no "#" in the address). The old /how-to-buy opens the same section.
 [[redirects]]
   from = "/how-to-buy"
   to = "/index.html"

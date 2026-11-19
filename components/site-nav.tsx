@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ROUTE_EVENT } from '@/components/book-viewing';
 
 const LINKS = [
   { label: 'House Models', href: '/house-models', section: 'house-models' },
   { label: 'Locations', href: '/locations', section: 'locations' },
-  { label: 'How to Buy', href: '/how-to-buy', section: 'calculator' },
+  { label: 'Calculator', href: '/calculator', section: 'calculator' },
+  { label: 'Requirements', href: '/requirements', section: 'requirements' },
   { label: 'Book a Viewing', href: '/book-a-viewing', section: 'book-a-viewing' },
   { label: 'Careers', href: '/careers', section: 'careers' },
   { label: 'Contact', href: '/contact', section: 'contact' },
@@ -16,6 +18,9 @@ const LINKS = [
  */
 export function SiteNav() {
   const [section, setSection] = useState('hero');
+  // A Calculator or Requirements link that was just used wins until the visitor leaves the section.
+  const picked = useRef<string | null>(null);
+  const arrived = useRef(false);
 
   useEffect(() => {
     let raf = 0;
@@ -26,20 +31,57 @@ export function SiteNav() {
       let current = 'hero';
       for (const id of ['house-models', 'locations', 'calculator', 'book-a-viewing', 'careers', 'contact']) {
         const el = document.getElementById(id);
-        // The footer is shorter than the screen, so it counts as "in view" once it is half way up.
-        if (el && el.getBoundingClientRect().top <= (id === 'contact' ? window.innerHeight / 2 : line)) current = id;
+        // The footer is shorter than the screen, so it counts as "in view" once it is half way up;
+        // the calculator lights up as it comes into view, before it reaches the top.
+        const at = id === 'contact' || id === 'calculator' ? window.innerHeight / 2 : line;
+        if (el && el.getBoundingClientRect().top <= at) current = id;
+      }
+      // Calculator first; once the section has fully arrived and is showing the reservation
+      // requirements (not a computation), Requirements lights up instead.
+      if (current !== 'calculator') {
+        // forget the clicked link only once the visitor has reached the section and moved on
+        if (arrived.current) picked.current = null;
+      } else if (picked.current) {
+        arrived.current = true;
+        current = picked.current;
+      }
+      else {
+        const calc = document.getElementById('calculator');
+        const view = document.getElementById('calculator-result')?.dataset.view;
+        if (calc && calc.getBoundingClientRect().top <= line + 8 && view === 'requirements') current = 'requirements';
       }
       setSection(current);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(read);
     };
+    const pick = () => {
+      const p = location.pathname.replace(/\/+$/, '');
+      arrived.current = false;
+      picked.current = p === '/requirements' ? 'requirements' : p === '/calculator' || p === '/how-to-buy' ? 'calculator' : null;
+      onScroll();
+    };
+    // After a computation the panel shows results, so Calculator lights up again.
+    const onView = () => {
+      if (document.getElementById('calculator-result')?.dataset.view === 'computation') {
+        picked.current = null;
+        if (location.pathname.replace(/\/+$/, '') === '/requirements') history.replaceState(null, '', '/calculator' + location.search);
+      }
+      onScroll();
+    };
+    pick();
     read();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    window.addEventListener('phirst:calc-view', onView);
+    window.addEventListener(ROUTE_EVENT, pick);
+    window.addEventListener('popstate', pick);
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
+      window.removeEventListener('phirst:calc-view', onView);
+      window.removeEventListener(ROUTE_EVENT, pick);
+      window.removeEventListener('popstate', pick);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { RequirementsPanel, type RequirementsTab } from '@/components/requirements-panel';
+import { SHOW_REQUIREMENTS_EVENT } from '@/lib/events';
 import { Select, type Option } from '@/components/ui/select';
 import { SectionSeam } from '@/components/ui/section-seam';
 import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
@@ -19,7 +20,7 @@ import {
   type Unit,
 } from '@/lib/inventory';
 
-const EMAIL = 'm@phirst.homes';
+const MESSENGER = 'https://m.me/marielle.medina.16';
 
 const peso = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money = (n: number) => `₱${peso.format(n)}`;
@@ -219,8 +220,25 @@ export function Calculator() {
   const isCash = financing === 'cash';
   const showResult = computed && complete && result;
 
+  // The menu highlights Calculator or Requirements depending on what the panel shows.
+  useEffect(() => {
+    window.dispatchEvent(new Event('phirst:calc-view'));
+  }, [showResult]);
+
+  // The Requirements menu link brings the requirements back (selections are kept).
+  useEffect(() => {
+    const show = () => {
+      setComputed(false);
+      setReqTab('initial');
+    };
+    window.addEventListener(SHOW_REQUIREMENTS_EVENT, show);
+    return () => window.removeEventListener(SHOW_REQUIREMENTS_EVENT, show);
+  }, []);
+
+  // Inquire: Marielle's Messenger, with the unit and computation as the draft message
+  // (Messenger keeps the draft for some accounts and ignores it for others).
   const inquiry = () => {
-    if (!unit) return `mailto:${EMAIL}`;
+    if (!unit) return MESSENGER;
     const lines = [
       `Project: ${projectLabel(unit.project)}`,
       `Unit: ${phaseLabel(unit)} ${blockLot(unit.code)} (${unit.code})`,
@@ -233,7 +251,7 @@ export function Calculator() {
       'Name:',
       'Mobile number:',
     ].filter((l, i, a) => l !== '' || i >= a.length - 3);
-    return `mailto:${EMAIL}?subject=${encodeURIComponent(`Inquiry: ${titleCase(unit.type)}, ${blockLot(unit.code)}, ${projectLabel(unit.project)}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+    return `${MESSENGER}?text=${encodeURIComponent([`Hi! I'd like to inquire about this unit:`, ...lines.filter((l) => l && !/:$/.test(l))].join('\n'))}`;
   };
   // Carries the unit being viewed into the Book a Viewing form.
   const viewing = unit
@@ -355,7 +373,7 @@ export function Calculator() {
         </div>
 
         {/* ---------- Result ---------- */}
-        <div id="calculator-result" className="print-area flex flex-col rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
+        <div id="calculator-result" data-view={showResult ? 'computation' : 'requirements'} className="print-area flex flex-col rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
 
           {status === 'error' && (
             <Notice icon="nounit" title="Inventory is unavailable right now" tone="red">
@@ -376,7 +394,7 @@ export function Calculator() {
             <Notice icon="info" title="Please inquire for this unit">
               The published reservation fee schedule does not cover {titleCase(result.unit.type)} in {projectLabel(result.unit.project)}, so we cannot show a sample computation here.
               <div className="mt-5">
-                <a href={inquiry()} className="inline-flex h-11 items-center gap-2 rounded-lg border border-gold px-5 font-semibold text-gold hover:bg-gold hover:text-black">
+                <a href={inquiry()} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center gap-2 rounded-lg border border-gold px-5 font-semibold text-gold hover:bg-gold hover:text-black">
                   <Icon name="chat" /> Inquire about this unit
                 </a>
               </div>
@@ -385,10 +403,18 @@ export function Calculator() {
 
           {status === 'ready' && showResult && result.rf != null && (
             <>
+              {/* Printed page only: washed-out logo behind the computation, and the site address */}
+              <div className="print-only print-watermark" aria-hidden="true">
+                <img src="/assets/img/ph-badge-512.png" alt="" />
+              </div>
+              <div className="print-only print-footer">
+                <span>https://phirst.homes/calculator</span>
+                <span>Sample computation only. Prices and terms are subject to change without prior notice.</span>
+              </div>
               {/* Unit header */}
-              <div className="mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
+              <div className="print-unit mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
                 <div
-                  className={`relative overflow-hidden rounded-lg border border-white/15 bg-[#101b33] ${
+                  className={`print-hide relative overflow-hidden rounded-lg border border-white/15 bg-[#101b33] ${
                     seriesImage(result.unit.type)?.shape === 'tall' ? 'h-[150px] w-[120px]' : 'h-[118px] w-[210px]'
                   }`}
                 >
@@ -441,7 +467,7 @@ export function Calculator() {
                 </div>
 
                 {/* Downpayment | Balance & Monthly Amortization: two equal columns */}
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="print-cols grid gap-4 xl:grid-cols-2">
                   <div className="flex flex-col">
                     <SectionTitle icon="wallet">{isCash ? 'Payment Schedule' : 'Downpayment'}</SectionTitle>
                     <div className="flex flex-1 flex-col overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d]">
@@ -504,7 +530,7 @@ export function Calculator() {
                 <a href={viewing} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-[linear-gradient(180deg,#ffd77a,#f2b63c_55%,#c98a1a)] px-5 text-[17px] font-bold text-[#14100a] shadow-lg shadow-black/40 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                   <Icon name="calendar" /> Book a Viewing
                 </a>
-                <a href={inquiry()} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+                <a href={inquiry()} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
                   <Icon name="chat" /> Inquire about this unit
                 </a>
                 <button type="button" onClick={() => window.print()} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">

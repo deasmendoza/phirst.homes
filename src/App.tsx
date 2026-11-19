@@ -3,6 +3,7 @@ import { Hero } from '@/components/hero';
 import { HeroScroll } from '@/components/hero-scroll';
 import { pickHero } from '@/src/hero-config';
 import { MobileHeader } from '@/components/mobile-header';
+import { SHOW_REQUIREMENTS_EVENT } from '@/lib/events';
 import { Calculator } from '@/components/calculator';
 import { HouseModels } from '@/components/house-models';
 import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
@@ -27,9 +28,13 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/how-to-buy': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
+const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/calculator': 'calculator', '/requirements': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
 // Other addresses that open a section; the address bar then shows the section's own address.
-const ALIASES: Record<string, string> = { '/calculator': '/how-to-buy', '/requirements': '/how-to-buy' };
+const ALIASES: Record<string, string> = { '/how-to-buy': '/calculator' };
+// /requirements opens the calculator section with the requirements showing.
+const showRequirementsIf = (path: string) => {
+  if (normalize(path) === '/requirements') window.dispatchEvent(new Event(SHOW_REQUIREMENTS_EVENT));
+};
 const normalize = (path: string) => {
   const p = path.replace(/\/+$/, '') || '/';
   return ALIASES[p] ?? p;
@@ -41,14 +46,15 @@ function scrollToPath(path: string, behavior: ScrollBehavior) {
   else window.scrollTo({ top: 0, behavior });
 }
 
-/** /how-to-buy (also /calculator and /requirements) shows the homepage scrolled to the calculator; menu links scroll instead of reloading. */
+/** /calculator and /requirements (and the old /how-to-buy) show the homepage scrolled to the calculator; menu links scroll instead of reloading. */
 function useSectionRoutes() {
   useEffect(() => {
     // Old "#calculator" links keep working and are rewritten to the clean address.
     const fromHash = normalize(`/${location.hash.slice(1)}`);
     if (location.hash && SECTIONS[fromHash]) history.replaceState(null, '', fromHash);
-    // /calculator and /requirements become /how-to-buy
+    // the old /how-to-buy becomes /calculator
     else if (normalize(location.pathname) !== (location.pathname.replace(/\/+$/, '') || '/')) history.replaceState(null, '', normalize(location.pathname) + location.search);
+    showRequirementsIf(location.pathname);
     if (SECTIONS[normalize(location.pathname)]) scrollToPath(location.pathname, 'instant');
 
     const onClick = (e: MouseEvent) => {
@@ -64,9 +70,13 @@ function useSectionRoutes() {
       e.preventDefault();
       if (normalize(location.pathname) !== path || location.search !== url.search) history.pushState(null, '', path + url.search);
       window.dispatchEvent(new Event(ROUTE_EVENT));
+      showRequirementsIf(path);
       scrollToPath(path, 'smooth');
     };
-    const onPop = () => scrollToPath(location.pathname, 'smooth');
+    const onPop = () => {
+      showRequirementsIf(location.pathname);
+      scrollToPath(location.pathname, 'smooth');
+    };
 
     document.addEventListener('click', onClick);
     window.addEventListener('popstate', onPop);

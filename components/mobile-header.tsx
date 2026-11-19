@@ -1,7 +1,8 @@
 const LINKS = [
   ['House Models', '/house-models'],
   ['Locations', '/locations'],
-  ['How to Buy', '/how-to-buy'],
+  ['Calculator', '/calculator'],
+  ['Requirements', '/requirements'],
   ['Book a Viewing', '/book-a-viewing'],
   ['Careers', '/careers'],
   ['Contact', '/contact'],
