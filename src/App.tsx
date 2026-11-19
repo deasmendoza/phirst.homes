@@ -11,6 +11,7 @@ import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { BackgroundPixelStars } from '@/components/ui/background-pixel-stars';
+import { FitScreen } from '@/components/ui/fit-screen';
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -91,10 +92,19 @@ export default function App() {
           {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
         </div>
         <HouseModels />
-        <Locations />
-        <Calculator />
-        <BookViewing />
-        <Careers />
+        {/* On desktop these are scaled to fit one screen when they are taller than the window. */}
+        <FitScreen>
+          <Locations />
+        </FitScreen>
+        <FitScreen>
+          <Calculator />
+        </FitScreen>
+        <FitScreen>
+          <BookViewing />
+        </FitScreen>
+        <FitScreen>
+          <Careers />
+        </FitScreen>
       </main>
       <div className="relative z-10">
         <SiteFooter />
