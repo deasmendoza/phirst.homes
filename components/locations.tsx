@@ -198,9 +198,12 @@ export function Locations() {
             <p className="mt-8 rounded-xl border border-white/20 bg-[#0a1120]/80 px-5 py-8 text-center text-white/80">No development matches “{query}”.</p>
           ) : (
             <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
-              {/* The open group */}
+              {/* The open group. On desktop it is never taller than the column of other provinces
+                  beside it: a long list (e.g. Batangas) scrolls inside its box, so the section keeps
+                  the same size whichever province is open. */}
               {open && (
-                <div className="overflow-hidden rounded-xl border border-gold/70 bg-[#0a1120]/88">
+                <div className="lg:relative lg:min-h-[330px] lg:self-stretch">
+                <div className="flex flex-col overflow-hidden rounded-xl border border-gold/70 bg-[#0a1120]/88 lg:absolute lg:inset-x-0 lg:top-0 lg:max-h-full">
                   <h3>
                     <button
                       type="button"
@@ -213,7 +216,7 @@ export function Locations() {
                       <Chevron open />
                     </button>
                   </h3>
-                  <ul className="divide-y divide-white/10">
+                  <ul className="divide-y divide-white/10 lg:min-h-0 lg:overflow-y-auto lg:[scrollbar-color:rgba(242,182,60,0.55)_transparent] lg:[scrollbar-width:thin]">
                     {open.developments.map((d) => (
                       <li key={d.name} className="flex gap-3.5 px-4 py-3">
                         <HouseIcon />
@@ -224,6 +227,7 @@ export function Locations() {
                       </li>
                     ))}
                   </ul>
+                </div>
                 </div>
               )}
 
