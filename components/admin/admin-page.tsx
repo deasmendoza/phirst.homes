@@ -178,8 +178,6 @@ export default function AdminPage() {
   if (!user) {
     return shell(
       <div className="mx-auto mt-[8vh] w-[min(100%,420px)] rounded-[22px] border border-[#d9a94a]/70 bg-[linear-gradient(180deg,#0b1730,#050b1a)] p-6 sm:p-8">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-gold">PHirst · Team M BigTime</p>
-        <h1 className="mb-5 mt-1 font-serif text-[30px] font-semibold text-gold-soft">Admin sign-in</h1>
         <SignInForm onDone={() => location.reload()} />
       </div>,
     );

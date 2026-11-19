@@ -57,9 +57,6 @@ export function SignInDialog({ onClose }: { onClose: () => void }) {
       className="m-auto w-[min(92vw,420px)] rounded-[22px] border border-[#d9a94a]/70 bg-[linear-gradient(180deg,#0b1730,#050b1a)] p-0 text-white shadow-[0_24px_70px_rgba(0,0,0,0.6)] backdrop:bg-black/70"
     >
       <div className="p-6 sm:p-8">
-        <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-gold">PHirst · Team M BigTime</p>
-        <h2 className="mt-1 font-serif text-[28px] font-semibold text-gold-soft">Welcome back</h2>
-        <p className="mb-5 mt-1 text-[14px] text-white/70">Team members only. Sign in to see bookings and applications.</p>
         <SignInForm onDone={() => (location.href = '/admin')} />
         <button type="button" onClick={() => ref.current?.close()} className="mt-4 w-full text-center text-[13px] text-white/60 underline">Close</button>
       </div>
