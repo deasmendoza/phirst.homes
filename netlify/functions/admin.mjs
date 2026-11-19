@@ -29,10 +29,12 @@ async function login(req, context) {
   const id = String(body.username || "").trim().toLowerCase();
   const user = findUser(id);
   const hash = user && passwordHash(id);
-  if (!user || !hash) {
+  if (!user) {
     await verifyPassword(String(body.password || ""), DUMMY);
     throw new HttpError(401, BAD_LOGIN);
   }
+  // A real person whose password is missing in Netlify settings: say so, instead of a misleading "incorrect".
+  if (!hash) throw new HttpError(503, "Sign-in is not set up for this person yet (the password setting is missing in Netlify).");
   const lock = await lockState(id, context);
   if (isLocked(lock)) throw new HttpError(429, `Too many incorrect attempts. Please try again in ${lockMinutesLeft(lock)} minutes.`);
   if (!(await verifyPassword(String(body.password || ""), hash))) {
