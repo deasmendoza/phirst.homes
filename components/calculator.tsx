@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { RequirementsPanel, type RequirementsTab } from '@/components/requirements-panel';
 import { Select, type Option } from '@/components/ui/select';
 import { SectionSeam } from '@/components/ui/section-seam';
 import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
@@ -121,6 +122,7 @@ export function Calculator() {
   const [termId, setTermId] = useState('');
   const [years, setYears] = useState('');
   const [computed, setComputed] = useState(false);
+  const [reqTab, setReqTab] = useState<RequirementsTab>('initial');
 
   useEffect(() => {
     const ctl = new AbortController();
@@ -210,6 +212,7 @@ export function Calculator() {
     setTermId('');
     setYears('');
     setComputed(false);
+    setReqTab('initial');
   };
 
   const financingLabel = FINANCING.find((f) => f.id === financing)?.label ?? '';
@@ -352,8 +355,7 @@ export function Calculator() {
         </div>
 
         {/* ---------- Result ---------- */}
-        <div id="calculator-result" className="print-area rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
-          {status === 'loading' && <Notice icon="empty" title="Loading available units…">One moment while we fetch today's inventory.</Notice>}
+        <div id="calculator-result" className="print-area flex flex-col rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
 
           {status === 'error' && (
             <Notice icon="nounit" title="Inventory is unavailable right now" tone="red">
@@ -367,11 +369,8 @@ export function Calculator() {
             </Notice>
           )}
 
-          {status === 'ready' && inventory.units.length > 0 && !showResult && (
-            <Notice icon="empty" title="Compute Your Home Plan">
-              Select a project, house model, unit, and financing details to see your monthly computation.
-            </Notice>
-          )}
+          {/* Until a computation is made: the reservation requirements (also while units load) */}
+          {(status === 'loading' || (status === 'ready' && inventory.units.length > 0)) && !showResult && <RequirementsPanel tab={reqTab} onTab={setReqTab} />}
 
           {status === 'ready' && showResult && result.rf == null && (
             <Notice icon="info" title="Please inquire for this unit">
