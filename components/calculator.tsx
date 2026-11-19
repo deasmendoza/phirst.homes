@@ -252,7 +252,7 @@ export function Calculator() {
             <Icon name="calculator" className="mt-1 size-10 text-gold" />
             <div>
               <h2 id="calculator-title" className="font-serif text-[27px] font-semibold leading-tight text-white xl:whitespace-nowrap xl:text-[29px]">
-                Home Financing <span className="text-gold">Calculator</span>
+                Sample <span className="text-gold">Computation</span>
               </h2>
               <p className="mt-1 text-[15px] text-white/85">Estimate your downpayment and monthly amortization.</p>
             </div>
