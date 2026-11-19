@@ -8,17 +8,24 @@ import tailwindcss from '@tailwindcss/vite';
 // site is viewed without Netlify.
 function localInventory(): Plugin {
   const handle: Connect.NextHandleFunction = async (req, res, next) => {
-    // Bookings are only saved on Netlify. Locally the form is checked the same way, then dropped.
-    if (req.url && /^\/api\/bookings(\?|$)/.test(req.url) && req.method === 'POST') {
+    // Bookings and applications are only saved on Netlify. Locally the form is checked the
+    // same way, then dropped.
+    const form = req.url && req.method === 'POST' ? /^\/api\/(bookings|applications)(\?|$)/.exec(req.url) : null;
+    if (form) {
       const chunks: Buffer[] = [];
       for await (const c of req) chunks.push(c as Buffer);
-      // @ts-expect-error plain JavaScript module without type declarations
-      const { readBooking } = await import('./netlify/functions/bookings.mjs');
       let result: { error?: string };
       try {
-        result = readBooking(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+        if (form[1] === 'bookings') {
+          // @ts-expect-error plain JavaScript module without type declarations
+          result = (await import('./netlify/functions/bookings.mjs')).readBooking(body);
+        } else {
+          // @ts-expect-error plain JavaScript module without type declarations
+          result = (await import('./netlify/functions/applications.mjs')).readApplication(body);
+        }
       } catch {
-        result = { error: 'The booking could not be read.' };
+        result = { error: 'The form could not be read.' };
       }
       res.statusCode = result.error ? 422 : 200;
       res.setHeader('content-type', 'application/json');
