@@ -26,8 +26,13 @@ function useDesktop() {
 }
 
 // Sections of the homepage that have their own clean address (no "#").
-const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/calculator': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
-const normalize = (path: string) => path.replace(/\/+$/, '') || '/';
+const SECTIONS: Record<string, string> = { '/house-models': 'house-models', '/locations': 'locations', '/how-to-buy': 'calculator', '/careers': 'careers', '/book-a-viewing': 'book-a-viewing', '/contact': 'contact' };
+// Other addresses that open a section; the address bar then shows the section's own address.
+const ALIASES: Record<string, string> = { '/calculator': '/how-to-buy', '/requirements': '/how-to-buy' };
+const normalize = (path: string) => {
+  const p = path.replace(/\/+$/, '') || '/';
+  return ALIASES[p] ?? p;
+};
 
 function scrollToPath(path: string, behavior: ScrollBehavior) {
   const id = SECTIONS[normalize(path)];
@@ -35,12 +40,14 @@ function scrollToPath(path: string, behavior: ScrollBehavior) {
   else window.scrollTo({ top: 0, behavior });
 }
 
-/** /calculator shows the homepage scrolled to the calculator; menu links scroll instead of reloading. */
+/** /how-to-buy (also /calculator and /requirements) shows the homepage scrolled to the calculator; menu links scroll instead of reloading. */
 function useSectionRoutes() {
   useEffect(() => {
     // Old "#calculator" links keep working and are rewritten to the clean address.
-    const fromHash = `/${location.hash.slice(1)}`;
+    const fromHash = normalize(`/${location.hash.slice(1)}`);
     if (location.hash && SECTIONS[fromHash]) history.replaceState(null, '', fromHash);
+    // /calculator and /requirements become /how-to-buy
+    else if (normalize(location.pathname) !== (location.pathname.replace(/\/+$/, '') || '/')) history.replaceState(null, '', normalize(location.pathname) + location.search);
     if (SECTIONS[normalize(location.pathname)]) scrollToPath(location.pathname, 'instant');
 
     const onClick = (e: MouseEvent) => {

@@ -348,7 +348,7 @@ export function Calculator() {
                 onClick={reset}
                 className="inline-flex h-12 flex-1 items-center justify-center gap-2.5 whitespace-nowrap rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                <Icon name="reset" /> Reset / Compute Another
+                <Icon name="reset" /> Reset / Back to Requirements
               </button>
             </div>
           </form>

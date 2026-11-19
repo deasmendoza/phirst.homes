@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 const LINKS = [
   { label: 'House Models', href: '/house-models', section: 'house-models' },
   { label: 'Locations', href: '/locations', section: 'locations' },
-  { label: 'Calculator', href: '/calculator', section: 'calculator' },
+  { label: 'How to Buy', href: '/how-to-buy', section: 'calculator' },
   { label: 'Book a Viewing', href: '/book-a-viewing', section: 'book-a-viewing' },
   { label: 'Careers', href: '/careers', section: 'careers' },
   { label: 'Contact', href: '/contact', section: 'contact' },

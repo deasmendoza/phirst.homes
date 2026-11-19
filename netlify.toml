@@ -6,13 +6,30 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# /calculator is the homepage, scrolled to the calculator (no "#" in the address).
+# /how-to-buy is the homepage, scrolled to the calculator and reservation requirements
+# (no "#" in the address). /calculator and /requirements open the same section.
+[[redirects]]
+  from = "/how-to-buy"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/how-to-buy/"
+  to = "/index.html"
+  status = 200
 [[redirects]]
   from = "/calculator"
   to = "/index.html"
   status = 200
 [[redirects]]
   from = "/calculator/"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/requirements"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/requirements/"
   to = "/index.html"
   status = 200
 
