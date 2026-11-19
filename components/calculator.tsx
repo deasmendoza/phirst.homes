@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Select, type Option } from '@/components/ui/select';
 import { SectionSeam } from '@/components/ui/section-seam';
-import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
+import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
   blockLot,
@@ -192,15 +192,14 @@ export function Calculator() {
     const rf = reservationFee(unit.type, unit.project);
     if (rf == null) return { unit, rf: null } as const;
 
-    const net = unit.tcp; // the sheet's TCP column already includes VAT
-    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - net) < 1;
-    const vat = vatOk ? (unit.vat as number) : 0;
-    const beforeVat = net - vat;
+    // The sheet's TCP column already includes VAT.
+    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - unit.tcp) < 1;
+    const { tcp, discount, vat, beforeVat, net } = price(unit.tcp, vatOk ? (unit.vat as number) : 0, term);
 
     const schedule = term.schedule(net, rf, beforeVat);
     const balance = net - schedule.total;
     const amort = needsYears ? loan(financing, balance, net, Number(years)) : null;
-    return { unit, rf, net, vat, beforeVat, schedule, balance, amort } as const;
+    return { unit, rf, tcp, discount, discountLabel: term.discount?.label ?? '', net, vat, beforeVat, schedule, balance, amort } as const;
   }, [unit, financing, term, years, needsYears]);
 
   const reset = () => {
@@ -426,10 +425,16 @@ export function Calculator() {
                 <div>
                   <SectionTitle icon="coins">Price Details</SectionTitle>
                   <dl className="grid overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d] sm:grid-flow-col sm:auto-cols-fr">
-                    <PriceCell label="Total Contract Price (TCP)" value={money(result.beforeVat)} />
+                    <PriceCell label="Total Contract Price (TCP)" value={money(result.tcp)} />
+                    {result.discount > 0 && <PriceCell label={`Less: ${result.discountLabel}`} value={`− ${money(result.discount)}`} />}
                     {result.vat > 0 && <PriceCell label="VAT (12%)" value={money(result.vat)} />}
                     <PriceCell label="Net Contract Price" value={money(result.net)} highlight />
                   </dl>
+                  {result.discount > 0 && (
+                    <p className="mt-1.5 text-[12px] text-white/60">
+                      Discount applies only if payment and requirements are completed within the stated period; otherwise it is subject to reassessment.
+                    </p>
+                  )}
                 </div>
 
                 {/* Downpayment | Balance & Monthly Amortization: two equal columns */}
