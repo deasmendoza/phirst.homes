@@ -15,10 +15,12 @@ const JOB = {
   position: 'International Territory Specialist',
   team: 'Team M-BigTime',
   salesChannel: 'GST3/DIV1',
-  focusProject: 'SOMA 1',
   manager: 'Marielle Medina',
   director: 'Jay Ar Tan Hachenova',
 };
+
+// Where the applicant will focus, chosen on the form.
+const FOCUS_PROJECTS = ['SOMA 1', 'SOMA 2', 'SOMA 3'];
 
 const FILE_KINDS = ['transcript', 'clearance', 'savings', 'photo', 'signature'];
 
@@ -54,6 +56,7 @@ export function readApplication(body, today = new Date()) {
     homePhone: text(body.homePhone, 40),
     email: text(body.email, 160),
     source: text(body.source, 60),
+    focusProject: text(body.focusProject, 20),
     tin: text(body.tin, 30),
     attainment: text(body.attainment, 60),
     course: text(body.course, 100),
@@ -65,7 +68,7 @@ export function readApplication(body, today = new Date()) {
     ['lastName', 'your last name'], ['firstName', 'your first name'], ['middleName', 'your middle name'],
     ['gender', 'your gender'], ['civilStatus', 'your civil status'], ['citizenship', 'your citizenship'],
     ['houseNo', 'your house number'], ['street', 'your street or village'], ['city', 'your town or city'], ['province', 'your province'],
-    ['source', 'where you heard about us'], ['tin', 'your Tax Identification Number'],
+    ['source', 'where you heard about us'], ['focusProject', 'your focus project'], ['tin', 'your Tax Identification Number'],
     ['attainment', 'your highest educational attainment'], ['course', 'your course'], ['school', 'your school'], ['yearGraduated', 'the year you graduated'],
   ];
   for (const [key, label] of required) if (!a[key]) return { error: `Please give ${label}.` };
@@ -73,12 +76,13 @@ export function readApplication(body, today = new Date()) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(a.birthDate) || Number.isNaN(Date.parse(a.birthDate))) return { error: 'Please give your date of birth.' };
   const age = ageOn(a.birthDate, today);
   if (age < 18 || age > 100) return { error: 'Please check your date of birth.' };
+  if (!FOCUS_PROJECTS.includes(a.focusProject)) return { error: 'Please choose SOMA 1, SOMA 2 or SOMA 3 as your focus project.' };
   if (a.mobile.replace(/\D/g, '').length < 7) return { error: 'Please give a mobile number we can reach you on.' };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email)) return { error: 'Please check your e-mail address.' };
 
-  // Accreditation history: up to five rows; rows left empty are dropped.
+  // Accreditation history: the form has three rows; rows left empty are dropped.
   const history = (Array.isArray(body.history) ? body.history : [])
-    .slice(0, 5)
+    .slice(0, 3)
     .map((r) => ({ year: text(r?.year, 10), company: text(r?.company, 100), position: text(r?.position, 100), address: text(r?.address, 120) }))
     .filter((r) => r.year || r.company || r.position || r.address);
 

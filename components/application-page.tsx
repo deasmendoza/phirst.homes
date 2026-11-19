@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { SignaturePad, type SignaturePadHandle } from '@/components/signature-pad';
 import { uploadFile, type UploadKind } from '@/lib/upload';
+import { PRIVACY_STATEMENT, PRIVACY_TITLE } from '@/lib/privacy-statement';
 
 // /application: the Sellers Accreditation Form as a full page, with the Tranche 1 documents and
 // the signature. Everything goes to the website itself (/api/applications); the team details
@@ -10,10 +11,11 @@ import { uploadFile, type UploadKind } from '@/lib/upload';
 const FIXED: [string, string][] = [
   ['Position', 'International Territory Specialist'],
   ['Sales Channel', 'GST3/DIV1'],
-  ['Focus Project', 'SOMA 1'],
   ['Manager', 'Marielle Medina'],
   ['Director', 'Jay Ar Tan Hachenova'],
 ];
+
+const FOCUS_PROJECTS = ['SOMA 1', 'SOMA 2', 'SOMA 3'];
 
 const INPUT =
   'h-11 w-full min-w-0 rounded-[10px] border border-[#d9b35f]/75 bg-[#040b1a]/70 px-3 text-[15px] text-white outline-none transition [color-scheme:dark] placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35 read-only:cursor-default read-only:text-white/75';
@@ -65,7 +67,7 @@ const EMPTY = {
   lastName: '', firstName: '', middleName: '', nickName: '',
   birthDate: '', gender: '', civilStatus: '', licenseNo: '', citizenship: '',
   houseNo: '', street: '', city: '', province: '',
-  mobile: '', homePhone: '', email: '', source: '', tin: '',
+  mobile: '', homePhone: '', email: '', source: '', focusProject: '', tin: '',
   attainment: '', course: '', school: '', yearGraduated: '', schoolYears: '',
   website: '', // hidden trap for robots
 };
@@ -236,7 +238,7 @@ export function ApplicationPage() {
       ) : (
         <form onSubmit={submit} className="mt-10 grid gap-6">
           {/* Fixed team details */}
-          <dl className="grid gap-x-8 gap-y-3 rounded-[18px] border border-[#e7cf9b]/45 bg-white/[0.03] px-5 py-4 sm:grid-cols-2 lg:grid-cols-5">
+          <dl className="grid gap-x-8 gap-y-3 rounded-[18px] border border-[#e7cf9b]/45 bg-white/[0.03] px-5 py-4 sm:grid-cols-2 lg:grid-cols-4">
             {FIXED.map(([k, val]) => (
               <div key={k} className="min-w-0">
                 <dt className="text-[11px] font-semibold tracking-[0.22em] text-white/60">{k.toUpperCase()}</dt>
@@ -279,6 +281,9 @@ export function ApplicationPage() {
               <Field id="a-mobile" label="Mobile No." required><input id="a-mobile" type="tel" required maxLength={40} autoComplete="tel" value={v.mobile} onChange={set('mobile')} className={INPUT} /></Field>
               <Field id="a-home" label="Home Phone No."><input id="a-home" type="tel" maxLength={40} value={v.homePhone} onChange={set('homePhone')} className={INPUT} /></Field>
               <Field id="a-email" label="E-mail Address" required className="sm:col-span-2 lg:col-span-1"><input id="a-email" type="email" required maxLength={160} autoComplete="email" value={v.email} onChange={set('email')} className={INPUT} /></Field>
+              <Field id="a-focus" label="Focus Project" required>
+                <Select id="a-focus" required value={v.focusProject} onChange={setField('focusProject')} options={FOCUS_PROJECTS} />
+              </Field>
               <Field id="a-source" label="Source of Recruitment" required>
                 <input id="a-source" required maxLength={60} list="a-source-list" placeholder="e.g. Facebook" value={v.source} onChange={set('source')} className={INPUT} />
                 <datalist id="a-source-list"><option value="Facebook" /><option value="Referral" /><option value="Website" /></datalist>
@@ -319,7 +324,7 @@ export function ApplicationPage() {
                 </div>
               ))}
             </div>
-            {history.length < 5 && (
+            {history.length < 3 && (
               <button type="button" onClick={() => setHistory((rows) => [...rows, { ...BLANK_ROW }])} className="mt-3 rounded-full border border-[#d9a94a] px-4 py-1.5 text-[14px] font-semibold text-white transition hover:bg-gold/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-soft">
                 + Add another
               </button>
@@ -355,6 +360,28 @@ export function ApplicationPage() {
                 </label>
               ))}
             </div>
+
+            <details className="mt-4 rounded-[14px] border border-white/15 bg-white/[0.03] px-4 py-3">
+              <summary className="cursor-pointer text-[15px] font-semibold text-gold-soft">Read the Privacy Statement</summary>
+              <div className="mt-3 max-h-72 space-y-3 overflow-y-auto pr-2 text-[14px] leading-relaxed text-white/85">
+                <p className="font-semibold tracking-wide text-white">{PRIVACY_TITLE}</p>
+                {PRIVACY_STATEMENT.map((part, i) => (
+                  <div key={i}>
+                    <p>
+                      {part.n && <strong className="mr-1.5 text-white">{part.n}</strong>}
+                      {part.text}
+                    </p>
+                    {part.points && (
+                      <ul className="mt-1 space-y-0.5 pl-5">
+                        {part.points.map((pt) => (
+                          <li key={pt}>{pt}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
 
             <div className="mt-6 grid gap-x-8 gap-y-5 lg:grid-cols-[1.4fr_1fr]">
               <div>

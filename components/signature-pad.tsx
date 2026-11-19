@@ -13,6 +13,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label: string; onCh
   const canvas = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const dirty = useRef(false);
+  const bounds = useRef({ x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
   const [empty, setEmpty] = useState(true);
 
   const paint = () => {
@@ -32,17 +33,30 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label: string; onCh
   const clear = () => {
     paint();
     dirty.current = false;
+    bounds.current = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
     setEmpty(true);
     onChange?.(true);
   };
 
   useImperativeHandle(ref, () => ({
     isEmpty: () => !dirty.current,
+    // The picture is cropped to the ink (with a little room), so it sits well on the form.
     toBlob: () =>
       new Promise((done) => {
         const c = canvas.current;
         if (!c) return done(null);
-        c.toBlob(done, 'image/png');
+        const b = bounds.current;
+        const pad = 14;
+        const x = Math.max(0, Math.floor(b.x0 - pad));
+        const y = Math.max(0, Math.floor(b.y0 - pad));
+        const w = Math.min(c.width, Math.ceil(b.x1 + pad)) - x;
+        const h = Math.min(c.height, Math.ceil(b.y1 + pad)) - y;
+        if (!(w > 0 && h > 0)) return c.toBlob(done, 'image/png');
+        const out = document.createElement('canvas');
+        out.width = w;
+        out.height = h;
+        out.getContext('2d')?.drawImage(c, x, y, w, h, 0, 0, w, h);
+        out.toBlob(done, 'image/png');
       }),
     clear,
   }));
@@ -53,6 +67,14 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label: string; onCh
     return [((e.clientX - r.left) / r.width) * c.width, ((e.clientY - r.top) / r.height) * c.height] as const;
   };
 
+  const grow = (x: number, y: number) => {
+    const b = bounds.current;
+    b.x0 = Math.min(b.x0, x);
+    b.y0 = Math.min(b.y0, y);
+    b.x1 = Math.max(b.x1, x);
+    b.y1 = Math.max(b.y1, y);
+  };
+
   const down = (e: React.PointerEvent) => {
     const ctx = canvas.current?.getContext('2d');
     if (!ctx) return;
@@ -60,6 +82,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label: string; onCh
     canvas.current!.setPointerCapture(e.pointerId);
     drawing.current = true;
     const [x, y] = at(e);
+    grow(x, y);
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + 0.01, y); // a tap leaves a dot
@@ -70,6 +93,7 @@ export const SignaturePad = forwardRef<SignaturePadHandle, { label: string; onCh
     const ctx = canvas.current?.getContext('2d');
     if (!ctx) return;
     const [x, y] = at(e);
+    grow(x, y);
     ctx.lineTo(x, y);
     ctx.stroke();
     if (!dirty.current) {
