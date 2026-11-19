@@ -407,9 +407,23 @@ export function Calculator() {
               <div className="print-only print-watermark" aria-hidden="true">
                 <img src="/assets/img/ph-badge-512.png" alt="" />
               </div>
+              <div className="print-only print-head">
+                <img src="/assets/img/ph-badge-512.png" alt="" />
+                <div>
+                  <div className="print-head-title">Sample Computation</div>
+                  <div className="print-head-sub">PHIRST.HOMES · Team M-BigTime, Accredited PHirst Sales Team</div>
+                </div>
+                <div className="print-head-date">
+                  Prepared {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+              </div>
               <div className="print-only print-footer">
+                <ul>
+                  <li>Sample computation only. Prices and terms are subject to change without prior notice.</li>
+                  <li>Reservation fee is non-refundable and non-transferable.</li>
+                  <li>Monthly amortization is an estimate based on indicative interest rates.</li>
+                </ul>
                 <span>https://phirst.homes/calculator</span>
-                <span>Sample computation only. Prices and terms are subject to change without prior notice.</span>
               </div>
               {/* Unit header */}
               <div className="print-unit mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">

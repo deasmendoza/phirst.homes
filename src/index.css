@@ -146,12 +146,43 @@ html {
     position: relative;
     display: block !important;
     width: 210mm !important;
-    padding: 11mm 13mm 20mm !important;
+    padding: 11mm 14mm 27mm !important;
     margin: 0 !important;
     background: #fff !important;
     border: 0 !important;
     border-radius: 0 !important;
     font-size: 12px;
+  }
+  /* Everything except the page furniture is drawn larger so the computation fills the A4 page. */
+  #calculator-result.print-area > :not(.print-only) {
+    zoom: 1.1;
+  }
+  .print-only.print-head {
+    display: flex !important;
+    align-items: center;
+    gap: 4mm;
+    padding-bottom: 4mm;
+    margin-bottom: 6mm;
+    border-bottom: 2px solid #d9b45f;
+  }
+  .print-head img {
+    width: 15mm;
+    height: 15mm;
+  }
+  .print-head-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .print-head-sub {
+    font-size: 11px;
+    color: #555 !important;
+  }
+  .print-head-date {
+    margin-left: auto;
+    font-size: 11px;
+    color: #555 !important;
   }
   .print-unit {
     grid-template-columns: 1fr auto !important;
@@ -177,17 +208,28 @@ html {
     width: 100%;
     height: auto;
   }
-  .print-footer {
+  .print-only.print-footer {
     position: fixed;
-    left: 13mm;
-    right: 13mm;
-    bottom: 8mm;
+    left: 14mm;
+    right: 14mm;
+    bottom: 9mm;
     display: flex !important;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 8mm;
     border-top: 1px solid #ccc;
-    padding-top: 2.5mm;
-    font-size: 9.5px;
+    padding-top: 3mm;
+    font-size: 10px;
+    line-height: 1.5;
     color: #555 !important;
+  }
+  .print-footer ul {
+    margin: 0;
+    padding-left: 4mm;
+    list-style: disc;
+  }
+  .print-footer span {
+    white-space: nowrap;
+    font-weight: 600;
   }
 }
