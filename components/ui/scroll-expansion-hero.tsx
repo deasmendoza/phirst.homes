@@ -14,6 +14,7 @@
 //  - a title written "First|Rest" sets its two lines explicitly
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { HeroLogoSignIn } from "@/components/admin/sign-in-dialog";
 import { motion } from "framer-motion";
 
 interface ScrollExpandMediaProps {
@@ -207,6 +208,8 @@ const ScrollExpandMedia = ({
       className="transition-colors duration-700 ease-in-out overflow-x-hidden"
     >
       <section className="relative flex flex-col items-center justify-start min-h-[100dvh]">
+        {/* Hidden staff sign-in: a see-through button over the PHirst logo in the picture. */}
+        <HeroLogoSignIn />
         <div className="relative w-full flex flex-col items-center min-h-[100dvh]">
           <motion.div
             className="absolute inset-0 z-0 h-full"

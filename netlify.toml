@@ -98,3 +98,26 @@
   from = "/application/"
   to = "/index.html"
   status = 200
+
+# /admin is the private admin page (the homepage file; the page itself asks people to sign in).
+# It is never cached and never indexed.
+[[redirects]]
+  from = "/admin"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/admin/"
+  to = "/index.html"
+  status = 200
+  force = true
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

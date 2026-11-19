@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Hero } from '@/components/hero';
 import { HeroScroll } from '@/components/hero-scroll';
 import { pickHero } from '@/src/hero-config';
@@ -14,6 +14,9 @@ import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { FitScreen } from '@/components/ui/fit-screen';
+
+// The private admin is loaded only on /admin, so the public site never carries it.
+const AdminPage = lazy(() => import('@/components/admin/admin-page'));
 
 const DESKTOP = '(min-width: 1024px)';
 
@@ -146,5 +149,7 @@ function ApplicationRoute() {
 
 export default function App() {
   const [onApplication] = useState(() => normalize(location.pathname) === '/application');
+  const [onAdmin] = useState(() => normalize(location.pathname) === '/admin');
+  if (onAdmin) return <Suspense fallback={null}><AdminPage /></Suspense>;
   return onApplication ? <ApplicationRoute /> : <Home />;
 }
