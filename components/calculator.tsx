@@ -387,9 +387,13 @@ export function Calculator() {
             <>
               {/* Unit header */}
               <div className="mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
-                <div className="relative h-[118px] w-[200px] overflow-hidden rounded-lg border border-white/15 bg-[#101b33]">
+                <div
+                  className={`relative overflow-hidden rounded-lg border border-white/15 bg-[#101b33] ${
+                    seriesImage(result.unit.type)?.shape === 'tall' ? 'h-[150px] w-[120px]' : 'h-[118px] w-[210px]'
+                  }`}
+                >
                   {seriesImage(result.unit.type) ? (
-                    <img src={seriesImage(result.unit.type)!} alt="" className="absolute inset-0 h-full w-full origin-[50%_62%] scale-[1.6] object-cover" />
+                    <img src={seriesImage(result.unit.type)!.src} alt={`${titleCase(result.unit.type)} at night`} className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center text-white/40"><Icon name="home" className="size-12" /></div>
                   )}

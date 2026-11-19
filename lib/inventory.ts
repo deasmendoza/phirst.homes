@@ -88,11 +88,28 @@ export function sortUnits(units: Unit[]) {
   });
 }
 
-/** Night render shown in the unit header, for the models that have one. */
-export function seriesImage(type: string) {
+/**
+ * Night picture of the chosen model for the computation header. Townhouses are 16:9 so the
+ * whole row shows; single-detached houses are portrait (Corin square) so the house is never cut.
+ */
+const MODEL_PICTURES: [RegExp, string, 'wide' | 'tall'][] = [
+  [/^CALISTA/, 'calista', 'wide'],
+  [/^AMANI/, 'amani', 'wide'],
+  [/^ALORA/, 'alora', 'wide'],
+  [/^AURORA/, 'aurora', 'wide'],
+  [/^UNNA/, 'unna', 'tall'],
+  [/^BRENNA/, 'brenna', 'tall'],
+  [/^DUA/, 'dua', 'tall'],
+  [/^CARTLAND/, 'cartland', 'tall'],
+  [/^CHARLES/, 'charles', 'tall'],
+  [/^CHRISTIE/, 'christie', 'tall'],
+  [/^CORIN/, 'corin', 'tall'],
+];
+
+export function seriesImage(type: string): { src: string; shape: 'wide' | 'tall' } | null {
   const t = type.toUpperCase();
-  const n = /^CALISTA/.test(t) ? 1 : /^AMANI/.test(t) ? 2 : /^ALORA/.test(t) ? 3 : /^UNNA/.test(t) ? 4 : /^(CARTLAND|CHARLES|CHRISTIE)/.test(t) ? 5 : /^CORIN/.test(t) ? 6 : 0;
-  return n ? `/assets/img/hero/model-${n}.webp` : null;
+  const hit = MODEL_PICTURES.find(([re]) => re.test(t));
+  return hit ? { src: `/assets/img/compute/${hit[1]}.webp`, shape: hit[2] } : null;
 }
 
 /**
