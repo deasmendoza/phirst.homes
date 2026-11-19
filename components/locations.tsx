@@ -213,7 +213,7 @@ export function Locations() {
                       <Chevron open />
                     </button>
                   </h3>
-                  <ul className="max-h-[52vh] divide-y divide-white/10 overflow-y-auto lg:max-h-[min(54vh,470px)]">
+                  <ul className="divide-y divide-white/10">
                     {open.developments.map((d) => (
                       <li key={d.name} className="flex gap-3.5 px-4 py-3">
                         <HouseIcon />

@@ -224,7 +224,9 @@ const ScrollExpandMedia = ({
               className="w-screen h-screen"
               style={{
                 objectFit: "cover",
-                objectPosition: "center",
+                // Anchored to the left and near the bottom, so the round logo painted into the
+                // bottom-left corner is always whole: wide screens trim the sky, tall ones the right edge.
+                objectPosition: "0% 90%",
               }}
             />
             <div className="absolute inset-0 bg-black/10" />

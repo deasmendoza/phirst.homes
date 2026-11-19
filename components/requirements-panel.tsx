@@ -244,8 +244,8 @@ function Next() {
         </div>
       </div>
 
-      {/* Scrolls inside the panel when a section is open, so the panel keeps its size */}
-      <div className="mt-4 mb-4 max-h-[min(35vh,306px)] space-y-2 overflow-y-auto pr-1 [scrollbar-color:rgba(224,191,120,0.5)_transparent] [scrollbar-width:thin]">
+      {/* Grows with the open section: no scroll box inside the panel */}
+      <div className="mt-4 mb-4 space-y-2">
         {SECTIONS.map((s, i) => {
           const isOpen = open === i;
           return (
