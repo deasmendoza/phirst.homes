@@ -231,21 +231,9 @@ function Next() {
   const [open, setOpen] = useState<number | null>(null);
   const id = useId();
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="flex items-start gap-4">
-        <Glyph name="check" className="size-12 text-[#e0bf78]" />
-        <div>
-          <h3 className="font-serif text-[clamp(22px,1.9vw,30px)] font-semibold leading-tight text-white">
-            Complete Reservation <span className="text-[#e7cf9b]">Requirements</span>
-          </h3>
-          <p className="mt-1 text-[14px] text-white/80">
-            Documents to be submitted within <Gold>20 calendar days</Gold> after payment of the Reservation Fee.
-          </p>
-        </div>
-      </div>
-
-      {/* Grows with the open section: no scroll box inside the panel */}
-      <div className="mt-4 mb-4 space-y-2">
+    <div className="flex flex-1 flex-col lg:min-h-0">
+      {/* On desktop the list scrolls inside the panel, so opening a section never changes the panel's size */}
+      <div className="mb-4 space-y-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1 lg:[scrollbar-color:rgba(224,191,120,0.55)_transparent] lg:[scrollbar-width:thin]">
         {SECTIONS.map((s, i) => {
           const isOpen = open === i;
           return (
@@ -298,8 +286,11 @@ export function RequirementsPanel({ tab, onTab }: { tab: RequirementsTab; onTab:
     ['initial', 'Initial Requirements', 'clipboard'],
     ['next', 'Next Requirements', 'doc'],
   ];
+  // On desktop the panel takes the height of the form beside it and keeps it on both tabs:
+  // it is laid over its cell, so its own content never stretches the row.
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col lg:relative lg:min-h-[460px] lg:flex-1">
+    <div className="flex h-full flex-col lg:absolute lg:inset-0">
       <div role="tablist" aria-label="Reservation requirements" className="grid grid-cols-2 gap-2 border-b border-[#e0bf78]/40 pb-3">
         {tabs.map(([key, label, icon]) => {
           const active = tab === key;
@@ -331,9 +322,10 @@ export function RequirementsPanel({ tab, onTab }: { tab: RequirementsTab; onTab:
           );
         })}
       </div>
-      <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} className="flex flex-1 flex-col pt-5">
+      <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} className="flex flex-1 flex-col pt-5 lg:min-h-0 lg:overflow-y-auto lg:[scrollbar-color:rgba(224,191,120,0.55)_transparent] lg:[scrollbar-width:thin]">
         {tab === 'initial' ? <Initial /> : <Next />}
       </div>
+    </div>
     </div>
   );
 }
