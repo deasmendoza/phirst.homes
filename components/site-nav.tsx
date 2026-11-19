@@ -16,13 +16,15 @@ const LINKS = [
  * and sized to the screen; once the hero has scrolled away it becomes a compact dark bar.
  * (Below 1024px, MobileHeader does this job.)
  */
-export function SiteNav() {
-  const [section, setSection] = useState('hero');
+export function SiteNav({ fixedSection }: { fixedSection?: string } = {}) {
+  // fixedSection: a page of its own (e.g. /application) keeps one menu item lit and the bar compact.
+  const [section, setSection] = useState(fixedSection ?? 'hero');
   // A Calculator or Requirements link that was just used wins until the visitor leaves the section.
   const picked = useRef<string | null>(null);
   const arrived = useRef(false);
 
   useEffect(() => {
+    if (fixedSection) return;
     let raf = 0;
     const read = () => {
       raf = 0;

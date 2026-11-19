@@ -88,3 +88,13 @@
   to = "/index.html"
   status = 200
   force = true
+
+# /application is the Sellers Accreditation Form page (the homepage file, which shows the form for this address).
+[[redirects]]
+  from = "/application"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/application/"
+  to = "/index.html"
+  status = 200

@@ -8,6 +8,7 @@ import { Calculator } from '@/components/calculator';
 import { HouseModels } from '@/components/house-models';
 import { BookViewing, ROUTE_EVENT } from '@/components/book-viewing';
 import { Careers } from '@/components/careers';
+import { ApplicationPage } from '@/components/application-page';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
@@ -87,7 +88,7 @@ function useSectionRoutes() {
   }, []);
 }
 
-export default function App() {
+function Home() {
   const desktop = useDesktop();
   const [heroVariant] = useState(pickHero);
   useSectionRoutes();
@@ -121,4 +122,29 @@ export default function App() {
       </div>
     </>
   );
+}
+
+/** /application is a page of its own: the Sellers Accreditation Form, under the usual menu and footer. */
+function ApplicationRoute() {
+  useEffect(() => {
+    document.title = 'Sellers Accreditation Form | PHIRST.HOMES';
+  }, []);
+  return (
+    <>
+      <AuroraBackground />
+      <MobileHeader />
+      <SiteNav fixedSection="careers" />
+      <main className="relative z-10">
+        <ApplicationPage />
+      </main>
+      <div className="relative z-10">
+        <SiteFooter />
+      </div>
+    </>
+  );
+}
+
+export default function App() {
+  const [onApplication] = useState(() => normalize(location.pathname) === '/application');
+  return onApplication ? <ApplicationRoute /> : <Home />;
 }

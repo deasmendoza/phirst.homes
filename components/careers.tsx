@@ -1,9 +1,7 @@
 // Careers: a split-screen recruitment section. Everything except the portrait is real
-// text and real buttons, so it stays sharp, readable and editable. "Apply Now!" opens the
-// application form (components/careers-form.tsx).
+// text and real buttons, so it stays sharp, readable and editable. "Apply Now!" goes to the
+// application page (/application, components/application-page.tsx).
 
-import { useState } from 'react';
-import { CareersForm } from '@/components/careers-form';
 import { SectionSeam } from '@/components/ui/section-seam';
 
 const EMAIL = 'careers@phirst.homes';
@@ -13,14 +11,14 @@ const REQUIREMENTS: [string, string?][] = [
   ['NBI Clearance / Police Clearance'],
   ['Transcript of Records (TOR) / Certificate of Grades', 'At least 72 units'],
   ['Open and Enroll CBS Savings Account'],
+  ['2×2 ID Picture'],
+  ['E-Signature'],
 ];
 
 const CHAMPAGNE = '#e7cf9b';
 const GOLD_BUTTON = 'bg-[linear-gradient(180deg,#f1dcaa,#e0bf78_55%,#c39a4a)]';
 
 export function Careers() {
-  const [applying, setApplying] = useState(false);
-
   return (
     <section
       id="careers"
@@ -129,9 +127,8 @@ export function Careers() {
 
           {/* Apply */}
           <div className="mt-5 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => setApplying(true)}
+            <a
+              href="/application"
               className={`${GOLD_BUTTON} inline-flex h-[54px] w-full items-center justify-center gap-3 rounded-xl px-7 text-[19px] sm:w-auto font-bold text-[#14100a] shadow-[0_10px_30px_rgba(231,207,155,0.22)] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white`}
             >
               <span className="grid size-9 place-items-center rounded-full bg-[#0a1020] text-[#f1dcaa]">
@@ -141,7 +138,7 @@ export function Careers() {
                 </svg>
               </span>
               Apply Now!
-            </button>
+            </a>
             <a
               href={`mailto:${EMAIL}`}
               className="inline-flex h-[54px] w-full items-center justify-center gap-3 whitespace-nowrap rounded-xl border border-white/45 bg-[#0a1120]/80 px-4 text-[15px] sm:w-auto sm:px-6 sm:text-[17px] font-bold text-white transition hover:border-[#f1dcaa] hover:bg-[#101b33] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f1dcaa]"
@@ -156,7 +153,6 @@ export function Careers() {
         </div>
       </div>
 
-      <CareersForm open={applying} onClose={() => setApplying(false)} />
     </section>
   );
 }
