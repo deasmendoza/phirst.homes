@@ -10,7 +10,7 @@ import { Careers } from '@/components/careers';
 import { Locations } from '@/components/locations';
 import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
-import { BackgroundPixelStars } from '@/components/ui/background-pixel-stars';
+import { AuroraBackground } from '@/components/ui/aurora-background';
 import { FitScreen } from '@/components/ui/fit-screen';
 
 const DESKTOP = '(min-width: 1024px)';
@@ -83,11 +83,11 @@ export default function App() {
   useSectionRoutes();
   return (
     <>
-      <BackgroundPixelStars />
+      <AuroraBackground />
       <MobileHeader />
       <SiteNav />
       <main className="relative z-10">
-        {/* The hero keeps its own solid night backdrop: the shared star background starts below it. */}
+        {/* The hero keeps its own solid night backdrop: the shared gold glow background starts below it. */}
         <div className="bg-night">
           {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
         </div>

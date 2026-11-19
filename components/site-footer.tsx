@@ -40,7 +40,7 @@ export function SiteFooter() {
         label="Phirst.Homes"
         meta="©2026 · Philippines"
         columns={COLUMNS}
-        palette={{ background: '#000000', ink: '#FFFFFF', warm: '#C5A368' }}
+        palette={{ background: 'transparent', ink: '#FFFFFF', warm: '#C5A368' }}
         fontFamily='"Montserrat", "Helvetica Neue", Arial, system-ui, sans-serif'
         fontWeight={800}
       />
