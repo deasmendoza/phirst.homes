@@ -17,6 +17,61 @@ const BOOKING_LABELS: [string, string][] = [
   ['chargedTo', 'Charged to'], ['department', 'Department'], ['divHead', 'Division head'], ['genManager', 'General manager'], ['areaManager', 'Area manager'], ['sellerName', 'Seller'], ['sellerContact', 'Seller contact'],
 ];
 
+/** The booking request in the exact wording the team sends on Messenger, ready to copy and paste. */
+function requestText(b: Booking) {
+  const date = String(b.date ?? '');
+  const time = String(b.time ?? '');
+  const niceDate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T00:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric' }) : date;
+  const [h, m] = time.split(':').map(Number);
+  const niceTime = Number.isFinite(h) ? `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}` : time;
+  return [
+    `Charged To: ${b.chargedTo}`,
+    `Department: ${b.department}`,
+    `Div Head: ${b.divHead}`,
+    `Gen Manager: ${b.genManager}`,
+    `Date Needed: ${niceDate}`,
+    `Time Needed: ${niceTime}`,
+    `Pick up point: ${b.pickupPoint}`,
+    `Itinerary: ${b.itinerary}`,
+    `Total Pax: ${b.totalPax}`,
+    `Purpose: ${b.purpose}`,
+    `Client's Name: ${b.clientName}`,
+    `AM: ${b.areaManager}`,
+    `Seller's Name: ${b.sellerName}`,
+    `Sellers Contact Number: ${b.sellerContact}`,
+  ].join('\n');
+}
+
+function CopyRequest({ booking }: { booking: Booking }) {
+  const [copied, setCopied] = useState(false);
+  const text = requestText(booking);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const t = document.createElement('textarea');
+      t.value = text;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('copy');
+      t.remove();
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <section className={CARD}>
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <h3 className="m-0 mr-auto font-serif text-[20px] font-semibold text-gold-soft">Messenger request (copy and paste)</h3>
+        <button className="inline-flex h-10 items-center rounded-full bg-[linear-gradient(100deg,#c2933a,#ecca7c_42%,#e3bb63_62%,#c79a3f)] px-5 text-[14px] font-bold text-[#171c3a]" onClick={copy}>
+          {copied ? 'Copied!' : 'Copy'}
+        </button>
+      </div>
+      <pre className="m-0 whitespace-pre-wrap rounded-xl border border-white/10 bg-[#040b1a] p-4 font-sans text-[15px] leading-7 text-white">{text}</pre>
+    </section>
+  );
+}
+
 const matches = (hay: string[], q: string) => !q || hay.join(' ').toLowerCase().includes(q.toLowerCase());
 const go = (q: string) => history.pushState(null, '', `/admin${q}`);
 
@@ -131,6 +186,7 @@ function BookingView({ id, canEdit, onBack }: { id: string; canEdit: boolean; on
           }}
         />
       </div>
+      <CopyRequest booking={d.booking} />
       <section className={CARD}>
         <dl className="m-0">
           <Row label="Received">{when(String(d.booking.receivedAt))}</Row>
