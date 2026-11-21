@@ -15,8 +15,6 @@ const COMPANY = {
   divHead: 'MCV',
   genManager: 'ACO',
   areaManager: 'Marielle Medina',
-  sellerName: 'Michael & Andrea Mendoza',
-  sellerContact: '0917-651-0110',
 };
 
 const json = (status, body) =>
@@ -37,6 +35,9 @@ export function readBooking(body) {
     clientContact: text(body.clientContact, 40),
     clientEmail: text(body.clientEmail, 160),
     clientFacebook: text(body.clientFacebook, 200),
+    // Written in by the seller who sends the client. Can be left blank.
+    sellerName: text(body.sellerName, 120),
+    sellerContact: text(body.sellerContact, 40),
     // What the visitor was looking at in the calculator, if they came from there.
     project: text(body.project, 120),
     houseModel: text(body.houseModel, 120),

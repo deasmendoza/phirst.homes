@@ -101,10 +101,13 @@ function Home() {
       <MobileHeader />
       <SiteNav />
       <main className="relative z-10">
-        {/* The hero keeps its own solid night backdrop: the shared gold glow background starts below it. */}
-        <div className="bg-night">
-          {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
-        </div>
+        {/* The hero keeps its own solid night backdrop: the shared gold glow background starts below it.
+            Below 1024px (phones and tablets) there is no hero: the page opens on the House Models. */}
+        {desktop && (
+          <div className="bg-night">
+            {heroVariant === 'original' ? <Hero desktop={desktop} /> : <HeroScroll />}
+          </div>
+        )}
         <HouseModels />
         {/* On desktop these are scaled to fit one screen when they are taller than the window. */}
         <FitScreen>

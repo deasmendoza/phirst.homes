@@ -17,11 +17,7 @@ const COMPANY_LEFT: [string, string][] = [
   ['Div Head', 'MCV'],
   ['Gen Manager', 'ACO'],
 ];
-const COMPANY_RIGHT: [string, string][] = [
-  ['Area Manager', 'Marielle Medina'],
-  ["Seller's Name", 'Michael & Andrea Mendoza'],
-  ["Seller's Contact Number", '0917-651-0110'],
-];
+const AREA_MANAGER = 'Marielle Medina';
 
 // Pick up points. South and North are the malls and buildings where the van meets the client;
 // the last choice opens a province and a place, limited to provinces where PHirst has projects.
@@ -53,6 +49,8 @@ const EMPTY = {
   clientContact: '',
   clientEmail: '',
   clientFacebook: '',
+  sellerName: '', // filled in by the seller who sends the client; left blank for now
+  sellerContact: '',
   website: '', // hidden trap for robots
 };
 type Fields = typeof EMPTY;
@@ -153,6 +151,10 @@ function Icon({ name, className = 'size-6' }: { name: string; className?: string
 
 const INPUT =
   'h-9 lg:h-[clamp(30px,4.3vh,38px)] w-full min-w-0 rounded-[10px] border border-[#d9b35f]/75 bg-[#040b1a]/70 px-3 text-[15px] text-white outline-none transition [color-scheme:dark] placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35';
+// Date and time boxes: phones draw them wider than their box unless the native look is switched off.
+const PICKER = 'block max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:min-h-[1.4em] [&::-webkit-date-and-time-value]:text-left';
+const SMALL =
+  'h-8 w-full min-w-0 max-w-full rounded-lg border border-[#d9b35f]/75 bg-[#040b1a]/70 px-2.5 text-[14px] text-white outline-none transition [color-scheme:dark] placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35';
 const selectLook = ({ open, selected }: { open: boolean; selected: boolean }) =>
   `flex h-9 lg:h-[clamp(30px,4.3vh,38px)] w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-[#040b1a]/70 px-3 text-left text-[15px] outline-none transition focus-visible:border-gold-soft focus-visible:ring-2 focus-visible:ring-gold/35 ${
     open ? 'border-gold-soft ring-2 ring-gold/35' : 'border-[#d9b35f]/75'
@@ -329,10 +331,10 @@ export function BookViewing() {
             <form onSubmit={submit} className="mt-3 grid gap-[clamp(8px,1.3vh,14px)]">
               <div className="grid gap-x-8 gap-y-[clamp(8px,1.3vh,14px)] sm:grid-cols-2">
                 <Stacked icon="calendar" label="Date Needed" required htmlFor="bv-date">
-                  <input id="bv-date" type="date" required min={today()} value={f.date} onChange={set('date')} className={INPUT} />
+                  <input id="bv-date" type="date" required min={today()} value={f.date} onChange={set('date')} className={`${INPUT} ${PICKER}`} />
                 </Stacked>
                 <Stacked icon="clock" label="Time Needed" required htmlFor="bv-time">
-                  <input id="bv-time" type="time" required value={f.time} onChange={set('time')} className={INPUT} />
+                  <input id="bv-time" type="time" required value={f.time} onChange={set('time')} className={`${INPUT} ${PICKER}`} />
                 </Stacked>
                 <Stacked icon="pin" label="Pick up point" required htmlFor="bv-pickup">
                   <Select label="Pick up point" placeholder="Select pick up point" value={f.pickupPoint} options={PICKUP_OPTIONS} onChange={(v) => setF((cur) => ({ ...cur, pickupPoint: v }))} buttonClass={selectLook} />
@@ -397,16 +399,32 @@ export function BookViewing() {
                     </div>
                   ))}
                 </dl>
-                <dl>
-                  {COMPANY_RIGHT.map(([k, v], i) => (
-                    <div key={k} className="flex items-start gap-3">
-                      <Icon name={['person', 'group', 'phone'][i]} className="mt-0.5 size-6 text-gold" />
-                      <div className="flex flex-wrap gap-x-1.5">
-                        <dt>{k}:</dt>
-                        <dd className="font-bold text-white">{v}</dd>
-                      </div>
+                <dl className="min-w-0 space-y-1.5">
+                  <div className="flex items-start gap-3">
+                    <Icon name="person" className="mt-0.5 size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-wrap gap-x-1.5">
+                      <dt>Area Manager:</dt>
+                      <dd className="font-bold text-white">{AREA_MANAGER}</dd>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Icon name="group" className="size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt><label htmlFor="bv-seller">Seller's Name:</label></dt>
+                      <dd className="min-w-0 flex-1 basis-[8em]">
+                        <input id="bv-seller" type="text" maxLength={120} autoComplete="off" value={f.sellerName} onChange={set('sellerName')} className={SMALL} />
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Icon name="phone" className="size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt><label htmlFor="bv-seller-contact">Seller's Contact Number:</label></dt>
+                      <dd className="min-w-0 flex-1 basis-[8em]">
+                        <input id="bv-seller-contact" type="tel" maxLength={40} autoComplete="off" value={f.sellerContact} onChange={set('sellerContact')} className={SMALL} />
+                      </dd>
+                    </div>
+                  </div>
                 </dl>
               </div>
 

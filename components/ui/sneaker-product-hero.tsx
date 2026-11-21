@@ -263,6 +263,9 @@ export default function SneakerProductHero({
   const [thumbSet, setThumbSet] = React.useState(active)
   const [tab, setTab] = React.useState(0)
   React.useEffect(() => setTab(0), [thumbSet])
+  // "listing" mode shows three pictures at a time; `first` is the first one shown.
+  const [shownFrom, setShownFrom] = React.useState(0)
+  React.useEffect(() => setShownFrom(0), [thumbSet, tab])
 
   const stats = sizeStats(
     sizes.find((s) => s.label === size),
@@ -588,6 +591,7 @@ export default function SneakerProductHero({
     ? (groups[tabIx]?.views ?? [])
     : v ? (v.gallery?.length ? v.gallery : FRAMINGS.map((f) => ({ ...f, src: v.src }))) : []
   const more = Math.max(0, views.length - 3)
+  const paged = listing && views.length > 3
   const small = (vw: SneakerView): SneakerView => ({ ...vw, src: vw.thumb ?? vw.src })
   const ZOOM = listing ? 2.5 : 2.2
 
@@ -695,7 +699,11 @@ export default function SneakerProductHero({
 .snp-root[data-mode="listing"] .snp-thumbs{gap:1.1cqw}
 .snp-root[data-mode="listing"] .snp-thumbset{gap:1.1cqw}
 .snp-root[data-mode="listing"] .snp-thumb{width:6.6cqw;height:4.5cqw;border-radius:6px}
-.snp-root[data-mode="listing"] .snp-more{width:4.5cqw;height:4.5cqw;border-radius:6px;background:color-mix(in oklab,var(--color-foreground) 10%,transparent);color:var(--color-foreground);border:1px solid color-mix(in oklab,var(--color-foreground) 35%,transparent)}
+.snp-arrow{flex:none;width:max(30px,2.6cqw);height:max(30px,2.6cqw);border-radius:50%;display:grid;place-items:center;
+  border:1px solid color-mix(in oklab,var(--color-foreground) 35%,transparent);transition:background .2s,opacity .2s,transform .2s}
+.snp-arrow:not(:disabled):hover{background:var(--snp-accent,var(--color-foreground));color:var(--snp-accent-fg,var(--color-background));transform:scale(1.06)}
+.snp-arrow:disabled{opacity:.3;cursor:default}
+.snp-arrow svg{width:55%;height:55%}
 .snp-root[data-mode="listing"] .snp-thumb .snp-view,.snp-portal[data-mode="listing"] .snp-rail .snp-view{background-size:cover!important;background-position:center!important}
 .snp-frame[data-hold="true"]{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:zoom-in}
 .snp-frame[data-hold="true"][data-zoom="true"]{cursor:zoom-in}
@@ -847,7 +855,7 @@ a.snp-cta{text-decoration:none}
   .snp-info{display:contents}
   .snp-eyebrow{order:-3}
   .snp-title{order:-2;margin-top:4px;max-width:none}
-  .snp-desc,.snp-thumbs{order:2}
+  .snp-desc,.snp-tabs,.snp-thumbs{order:2}
   .snp-floor{height:9cqw;translate:0 15cqw}
   .snp-buy{order:1}
   .snp-sizes{gap:10px;margin-top:10px}
@@ -860,8 +868,8 @@ a.snp-cta{text-decoration:none}
   .snp-chip.snp-tab{padding:6px 12px;font-size:12px}
   .snp-root[data-mode="listing"] .snp-thumbs{gap:10px}
   .snp-root[data-mode="listing"] .snp-thumbset{gap:10px}
-  .snp-root[data-mode="listing"] .snp-thumb{width:88px;height:60px}
-  .snp-root[data-mode="listing"] .snp-more{width:60px;height:60px}
+  .snp-root[data-mode="listing"] .snp-thumb{width:76px;height:52px}
+  .snp-arrow{width:34px;height:34px}
   .snp-tabs + .snp-thumbs{margin-top:10px}
   .snp-chip{padding:7px 12px;font-size:13px}
   .snp-actions{margin-top:22px;gap:20px}
@@ -912,14 +920,28 @@ a.snp-cta{text-decoration:none}
             </div>
           )}
           <div className="snp-thumbs">
+            {paged && (
+              <button type="button" className="snp-arrow" aria-label="Previous pictures" disabled={shownFrom === 0} onClick={() => setShownFrom((n) => Math.max(0, n - 3))}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M15 5l-7 7 7 7" />
+                </svg>
+              </button>
+            )}
             <span className="snp-thumbset" ref={thumbsRef}>
-              {views.slice(0, 3).map((vw, i) => (
-                <button key={i} type="button" className="snp-thumb" aria-label={`View ${vw.label ?? `photo ${i + 1}`}`} onClick={() => openViewer(i)}>
+              {views.slice(listing ? shownFrom : 0, (listing ? shownFrom : 0) + 3).map((vw, i) => (
+                <button key={shownFrom + i} type="button" className="snp-thumb" aria-label={`View ${vw.label ?? `photo ${shownFrom + i + 1}`}`} onClick={() => openViewer((listing ? shownFrom : 0) + i)}>
                   <span className="snp-view" style={viewStyle(small(vw))} />
                 </button>
               ))}
             </span>
-            {more > 0 && (
+            {paged && (
+              <button type="button" className="snp-arrow" aria-label="Next pictures" disabled={shownFrom + 3 >= views.length} onClick={() => setShownFrom((n) => Math.min(Math.max(0, views.length - 3), n + 3))}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+            {!listing && more > 0 && (
               <button type="button" className="snp-more" aria-label={`View all ${views.length} photos`} onClick={() => openViewer(3)}>
                 +{more}
               </button>
