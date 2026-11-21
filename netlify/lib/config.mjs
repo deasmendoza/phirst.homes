@@ -5,7 +5,7 @@
 // Default team. To change it without touching code, set PHIRST_USERS in Netlify:
 //   PHIRST_USERS = username:role:Display Name, username:role:Display Name, ...
 // roles: superadmin | admin | agent.  Up to 10 people.
-const DEFAULT_USERS = "marielle:admin:Marielle,andrea:superadmin:Andrea,mike:agent:Mike";
+const DEFAULT_USERS = "admin:superadmin:Andrea,manager:admin:Marielle,agent:agent:Mike";
 export const MAX_USERS = 10;
 
 // What each role may do. Agents see nothing yet: add permissions here when they are ready.

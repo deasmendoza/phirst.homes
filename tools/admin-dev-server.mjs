@@ -4,7 +4,7 @@
 //
 // Netlify Blobs does not exist here, so a small in-memory stand-in is used and filled with MADE-UP
 // applicants and bookings (nothing real). Everything is forgotten when you stop the server.
-// Sign in with  marielle / andrea / mike  and the password  dev-only-1234  (only on this computer).
+// Sign in with  admin / manager / agent  and the password  dev-only-1234  (only on this computer).
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +22,7 @@ const PASSWORD = 'dev-only-1234';
 
 process.env.PHIRST_SESSION_SECRET = crypto.randomBytes(32).toString('base64url');
 const hash = await hashPassword(PASSWORD);
-for (const u of ['MARIELLE', 'ANDREA', 'MIKE']) process.env[`PHIRST_PASSWORD_${u}`] = hash;
+for (const u of ['ADMIN', 'MANAGER', 'AGENT']) process.env[`PHIRST_PASSWORD_${u}`] = hash;
 _setStoreFactory((name) => memStore(name));
 
 const { default: adminHandler } = await import('../netlify/functions/admin.mjs');
@@ -96,4 +96,4 @@ http.createServer(async (req, res) => {
   if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(root, 'dist', 'index.html');
   res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
   fs.createReadStream(file).pipe(res);
-}).listen(PORT, () => console.log(`Admin test server: http://localhost:${PORT}/admin  (users marielle / andrea / mike, password ${PASSWORD})`));
+}).listen(PORT, () => console.log(`Admin test server: http://localhost:${PORT}/admin  (users admin / manager / agent, password ${PASSWORD})`));
