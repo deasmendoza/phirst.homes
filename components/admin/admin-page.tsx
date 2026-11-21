@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ApiError, STATUSES, type AdminUser, type Status } from '@/components/admin/api';
-import { SignInForm } from '@/components/admin/sign-in-dialog';
 import { ApplicationView } from '@/components/admin/application-view';
 import { BTN, CARD, INPUT, Row, StatusSelect, when } from '@/components/admin/ui';
 
@@ -210,8 +209,8 @@ export default function AdminPage() {
     if (!meta) { meta = document.createElement('meta'); meta.name = 'robots'; document.head.appendChild(meta); }
     meta.content = 'noindex, nofollow';
     api<{ user: AdminUser; space: string }>('auth/session').then(
-      (r) => { setUser(r.user); setSpace(r.space); },
-      (e) => { if (e instanceof ApiError && e.status !== 401) console.error('admin session'); setUser(null); },
+      (r) => { if (r.user) { setUser(r.user); setSpace(r.space); } else location.replace('/login'); },
+      (e) => { if (e instanceof ApiError && e.status !== 401) console.error('admin session'); location.replace('/login'); },
     );
     const onPop = () => setRoute(new URLSearchParams(location.search));
     window.addEventListener('popstate', onPop);
@@ -220,7 +219,7 @@ export default function AdminPage() {
 
   // A person who is signed out mid-work (12 hours are over) goes back to the sign-in box.
   const refresh = useCallback(() => setListKey((k) => k + 1), []);
-  const signOut = async () => { await api('auth/logout', 'POST').catch(() => null); setUser(null); go(''); setRoute(new URLSearchParams()); };
+  const signOut = async () => { await api('auth/logout', 'POST').catch(() => null); location.replace('/login'); };
   const showTab = (t: typeof tab) => { setTab(t); go(''); setRoute(new URLSearchParams()); };
 
   const shell = (children: React.ReactNode) => (
@@ -229,15 +228,8 @@ export default function AdminPage() {
     </div>
   );
 
-  if (user === undefined) return shell(<p className="text-white/60">One moment…</p>);
-
-  if (!user) {
-    return shell(
-      <div className="mx-auto mt-[8vh] w-[min(100%,420px)] rounded-[22px] border border-[#d9a94a]/70 bg-[linear-gradient(180deg,#0b1730,#050b1a)] p-6 sm:p-8">
-        <SignInForm onDone={() => location.reload()} />
-      </div>,
-    );
-  }
+  // Signed out: the effect above sends the visitor to /login. Nothing else is shown meanwhile.
+  if (!user) return shell(<p className="text-white/60">One moment…</p>);
 
   const p = user.permissions;
   const appId = route.get('application');

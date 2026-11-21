@@ -111,6 +111,23 @@
   to = "/index.html"
   status = 200
   force = true
+# /login is the homepage with the staff sign-in box open. Never cached, never indexed.
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/login/"
+  to = "/index.html"
+  status = 200
+  force = true
+[[headers]]
+  for = "/login"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+
 [[headers]]
   for = "/admin"
   [headers.values]

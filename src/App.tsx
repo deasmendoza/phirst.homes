@@ -14,6 +14,7 @@ import { SiteNav } from '@/components/site-nav';
 import { SiteFooter } from '@/components/site-footer';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { FitScreen } from '@/components/ui/fit-screen';
+import { SignInDialog } from '@/components/admin/sign-in-dialog';
 
 // The private admin is loaded only on /admin, so the public site never carries it.
 const AdminPage = lazy(() => import('@/components/admin/admin-page'));
@@ -91,12 +92,28 @@ function useSectionRoutes() {
   }, []);
 }
 
-function Home() {
+/** /login is the homepage with the staff sign-in box already open on top of it (and not indexed). */
+function Home({ login = false }: { login?: boolean }) {
   const desktop = useDesktop();
   const [heroVariant] = useState(pickHero);
+  const [signIn, setSignIn] = useState(login);
   useSectionRoutes();
+  useEffect(() => {
+    if (!login) return;
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'robots'; document.head.appendChild(meta); }
+    meta.content = 'noindex, nofollow';
+  }, [login]);
   return (
     <>
+      {signIn && (
+        <SignInDialog
+          onClose={() => {
+            setSignIn(false);
+            if (login) history.replaceState(null, '', '/');
+          }}
+        />
+      )}
       <AuroraBackground />
       <MobileHeader />
       <SiteNav />
@@ -153,6 +170,7 @@ function ApplicationRoute() {
 export default function App() {
   const [onApplication] = useState(() => normalize(location.pathname) === '/application');
   const [onAdmin] = useState(() => normalize(location.pathname) === '/admin');
+  const [onLogin] = useState(() => normalize(location.pathname) === '/login');
   if (onAdmin) return <Suspense fallback={null}><AdminPage /></Suspense>;
-  return onApplication ? <ApplicationRoute /> : <Home />;
+  return onApplication ? <ApplicationRoute /> : <Home login={onLogin} />;
 }

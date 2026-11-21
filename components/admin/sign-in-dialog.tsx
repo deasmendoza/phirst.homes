@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { login } from '@/components/admin/api';
 
-// The staff sign-in box. It pops up when the PHirst logo in the hero is clicked (and is also the
-// sign-in form on /admin itself). A wrong password never says which half was wrong.
+// The staff sign-in box. It pops up when the PHirst logo is clicked, and opens by itself on /login. A wrong password never says which half was wrong.
 
 const INPUT =
   'h-11 w-full rounded-[10px] border border-[#d9b35f]/75 bg-[#040b1a]/80 px-3 text-[15px] text-white outline-none placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35';

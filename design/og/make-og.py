@@ -15,11 +15,36 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 HERE = Path(__file__).parent
 OUT = HERE.parent.parent / "public" / "og-image.jpg"
 CX, CY, R = 905, 115, 136  # the logo badge: centre and radius with its glow
+
+
+FONT = "/usr/share/fonts/opentype/inter/Inter-Medium.otf"
+
+
+def fix_corin_label(rgb):
+    """The picture says "Conn 120" on the label of the Corin house: letter it again as "Corin 120"."""
+    x0, y0, x1, y1 = 1522, 217, 1606, 244  # the text area inside the label
+    out = rgb.copy().astype(np.float32)
+    fill = np.median(out[240:244, 1530:1600].reshape(-1, 3), axis=0)  # the label's dark fill, below the text
+    out[y0:y1, x0:x1] = fill
+    k, cap = 6, 14.5
+    font = ImageFont.truetype(FONT, int(cap / 0.727 * k))
+    text = "Corin 120"
+    l, t, r, b = font.getbbox(text)
+    layer = Image.new("L", (r + 4 * k, int(cap * 2.4 * k)), 0)
+    ImageDraw.Draw(layer).text((2 * k, int(cap * 0.7 * k) - t), text, font=font, fill=255)
+    layer = layer.crop(layer.getbbox())
+    layer = layer.resize((79, max(1, round(layer.height / k))), Image.LANCZOS)
+    a = np.asarray(layer).astype(np.float32)[..., None] / 255.0
+    left, base = 1525, 236
+    ys, xs = base - layer.height, left
+    region = out[ys : ys + layer.height, xs : xs + layer.width]
+    out[ys : ys + layer.height, xs : xs + layer.width] = region * (1 - a) + np.array([240, 240, 240], np.float32) * a
+    return np.clip(out, 0, 255).astype(np.uint8)
 
 
 def clean(rgb):
@@ -73,6 +98,6 @@ def fit(im, W=1200, H=630):
 
 
 if __name__ == "__main__":
-    rgb = np.asarray(Image.open(HERE / "source.webp").convert("RGB"))
+    rgb = fix_corin_label(np.asarray(Image.open(HERE / "source.webp").convert("RGB")))
     cv2.imwrite(str(OUT), fit(clean(rgb)), [cv2.IMWRITE_JPEG_QUALITY, 88])
     print("wrote", OUT)
