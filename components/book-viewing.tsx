@@ -1,4 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { SectionSeam } from '@/components/ui/section-seam';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { Select, type Option } from '@/components/ui/select';
+import { PROVINCE_ORDER, loadInventory, projectLabel, provinceOf, type Unit } from '@/lib/inventory';
+import { LOCATIONS } from '@/lib/locations';
 
 // Book a Viewing: the site-tripping booking form beside the free van transfer.
 // Everything is real text; only the van is a picture.
@@ -13,11 +17,27 @@ const COMPANY_LEFT: [string, string][] = [
   ['Div Head', 'MCV'],
   ['Gen Manager', 'ACO'],
 ];
-const COMPANY_RIGHT: [string, string][] = [
-  ['Area Manager', 'Marielle Medina'],
-  ["Seller's Name", 'Michael & Andrea Mendoza'],
-  ["Seller's Contact Number", '0917-651-0110'],
+const AREA_MANAGER = 'Marielle Medina';
+
+// Pick up points. South and North are the malls and buildings where the van meets the client;
+// the last choice opens a province and a place, limited to provinces where PHirst has projects.
+const SOUTH = ['Pacific Star Building', 'SM Mall of Asia', 'Alabang Town Center', 'Festival Mall', 'Star Mall', 'Evia Mall, Daang Hari', 'SM San Pablo'];
+const NORTH = ['SM North Edsa', 'Trinoma Mall', 'WalterMart North Edsa', 'Pure Gold Balintawak', 'Victory Mall Monumento', 'SM Clark & SM San Fernando', 'Malls nearby NLEX', 'All Malls within EDSA - Cubao Area'];
+const IN_PROVINCE = 'in-province';
+const PICKUP_OPTIONS: Option[] = [
+  ...SOUTH.map((p) => ({ value: p, label: p, group: 'South Projects' })),
+  ...NORTH.map((p) => ({ value: p, label: p, group: 'North Projects' })),
+  { value: IN_PROVINCE, label: "Malls or landmarks within the project's province", group: "Within the project's province" },
 ];
+const groupOfPickup = (value: string) => PICKUP_OPTIONS.find((o) => o.value === value)?.group ?? '';
+
+/** Projects for the Itinerary list: the live inventory (same as the calculator), grouped by province. */
+function projectChoices(units: Unit[] | null): Option[] {
+  const names = units?.length ? [...new Set(units.map((u) => u.project))] : LOCATIONS.flatMap((g) => g.developments.map((d) => d.name.toUpperCase()));
+  return [...new Set(names)]
+    .map((p) => ({ value: projectLabel(p), label: projectLabel(p), group: provinceOf(p) }))
+    .sort((a, b) => PROVINCE_ORDER.indexOf(a.group) - PROVINCE_ORDER.indexOf(b.group) || a.label.localeCompare(b.label));
+}
 
 const EMPTY = {
   date: '',
@@ -29,6 +49,8 @@ const EMPTY = {
   clientContact: '',
   clientEmail: '',
   clientFacebook: '',
+  sellerName: '', // filled in by the seller who sends the client; left blank for now
+  sellerContact: '',
   website: '', // hidden trap for robots
 };
 type Fields = typeof EMPTY;
@@ -129,6 +151,14 @@ function Icon({ name, className = 'size-6' }: { name: string; className?: string
 
 const INPUT =
   'h-9 lg:h-[clamp(30px,4.3vh,38px)] w-full min-w-0 rounded-[10px] border border-[#d9b35f]/75 bg-[#040b1a]/70 px-3 text-[15px] text-white outline-none transition [color-scheme:dark] placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35';
+// Date and time boxes: phones draw them wider than their box unless the native look is switched off.
+const PICKER = 'block max-w-full appearance-none text-left [&::-webkit-date-and-time-value]:min-h-[1.4em] [&::-webkit-date-and-time-value]:text-left';
+const SMALL =
+  'h-8 w-full min-w-0 max-w-full rounded-lg border border-[#d9b35f]/75 bg-[#040b1a]/70 px-2.5 text-[14px] text-white outline-none transition [color-scheme:dark] placeholder:text-white/35 focus:border-gold-soft focus:ring-2 focus:ring-gold/35';
+const selectLook = ({ open, selected }: { open: boolean; selected: boolean }) =>
+  `flex h-9 lg:h-[clamp(30px,4.3vh,38px)] w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-[#040b1a]/70 px-3 text-left text-[15px] outline-none transition focus-visible:border-gold-soft focus-visible:ring-2 focus-visible:ring-gold/35 ${
+    open ? 'border-gold-soft ring-2 ring-gold/35' : 'border-[#d9b35f]/75'
+  } ${selected ? 'text-white' : 'text-white/45'}`;
 const LABEL = 'text-[14px] font-semibold leading-tight text-white xl:text-[15px]';
 const Star = () => (
   <span className="text-gold" aria-hidden="true">
@@ -176,6 +206,26 @@ export function BookViewing() {
   const [viewed, setViewed] = useState<Viewed | null>(null);
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState('');
+  const [units, setUnits] = useState<Unit[] | null>(null);
+  const [province, setProvince] = useState('');
+  const [place, setPlace] = useState('');
+
+  // The same live list of projects the calculator uses (a built-in list takes over if it cannot load).
+  useEffect(() => {
+    const ctl = new AbortController();
+    loadInventory(ctl.signal)
+      .then((inv) => setUnits(inv.units))
+      .catch(() => {});
+    return () => ctl.abort();
+  }, []);
+
+  const projects = useMemo(() => projectChoices(units), [units]);
+  const provinces = useMemo<Option[]>(
+    () => PROVINCE_ORDER.filter((p) => p !== 'Other' && projects.some((o) => o.group === p)).map((p) => ({ value: p, label: p })),
+    [projects],
+  );
+  const projectProvince = projects.find((o) => o.value === f.itinerary)?.group ?? '';
+  const chosenProvince = province || projectProvince;
 
   // Coming from the calculator: carry the project, house model and block & lot into the itinerary.
   useEffect(() => {
@@ -184,7 +234,8 @@ export function BookViewing() {
       if (!v) return;
       setViewed(v);
       setStatus('idle');
-      setF((cur) => ({ ...cur, itinerary: [v.project, v.houseModel, v.unit].filter(Boolean).join(', ') }));
+      setProvince('');
+      setF((cur) => ({ ...cur, itinerary: v.project || cur.itinerary }));
     };
     sync();
     window.addEventListener(ROUTE_EVENT, sync);
@@ -200,22 +251,37 @@ export function BookViewing() {
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (status === 'sending') return;
-    if (!f.clientEmail.trim() && !f.clientFacebook.trim()) {
-      setError('Please give your e-mail or your Facebook link / username.');
+    const inProvince = f.pickupPoint === IN_PROVINCE;
+    const problem = !f.pickupPoint
+      ? 'Please choose your pick up point.'
+      : inProvince && !chosenProvince
+        ? 'Please choose the province for your pick up.'
+        : inProvince && !place.trim()
+          ? 'Please tell us which mall or landmark in that province.'
+          : !f.itinerary
+            ? 'Please choose where you would like to go.'
+            : !f.clientEmail.trim() && !f.clientFacebook.trim()
+              ? 'Please give your e-mail or your Facebook link / username.'
+              : '';
+    if (problem) {
+      setError(problem);
       return;
     }
+    const pickupPoint = inProvince ? `${place.trim()}, ${chosenProvince} (within the project's province)` : `${f.pickupPoint} (${groupOfPickup(f.pickupPoint)})`;
     setError('');
     setStatus('sending');
     try {
       const res = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...f, ...(viewed ?? {}) }),
+        body: JSON.stringify({ ...f, pickupPoint, ...(viewed ?? {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '');
       setStatus('sent');
       setF(EMPTY);
+      setProvince('');
+      setPlace('');
       setViewed(null);
     } catch (err) {
       setStatus('idle');
@@ -227,22 +293,14 @@ export function BookViewing() {
     <section
       id="book-a-viewing"
       aria-labelledby="book-viewing-title"
-      className="relative isolate scroll-mt-16 overflow-hidden bg-[#06142a] lg:scroll-mt-0 px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4vw,84px)] lg:pb-5 lg:pt-[84px]"
+      className="relative isolate scroll-mt-16 overflow-hidden lg:scroll-mt-0 px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-[clamp(40px,4vw,84px)] lg:pb-5 lg:pt-[84px]"
     >
-      {/* Backdrop: deep navy with soft light, and gold ribbons sweeping through two corners */}
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_74%_58%,rgba(20,44,84,0.75),transparent_60%),linear-gradient(180deg,#05070d,rgba(6,20,42,0)_16%,rgba(6,20,42,0)_86%,#05070d)]" />
-        <div className="absolute -left-[16vw] -top-[26vw] hidden size-[44vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />
-        <div className="absolute -left-[19vw] -top-[29vw] hidden size-[46vw] rounded-full border border-[#ecca7c]/35 lg:block" />
-        <div className="absolute -bottom-[30vw] -right-[14vw] hidden size-[46vw] rounded-full border-[3px] border-[#d9a94a]/70 shadow-[0_0_30px_rgba(242,182,60,0.25)] lg:block" />
-        <div className="absolute -bottom-[33vw] -right-[17vw] hidden size-[48vw] rounded-full border border-[#ecca7c]/35 lg:block" />
-      </div>
-
+      <SectionSeam />
       <div className="mx-auto grid w-full max-w-[1760px] gap-x-[clamp(32px,4vw,84px)] gap-y-8 lg:gap-y-[clamp(8px,1.6vh,24px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:items-center">
         {/* ---------- Heading ---------- */}
         <div className="text-center lg:col-start-2 lg:row-start-1">
           <h2 id="book-viewing-title" className="font-serif text-[clamp(38px,min(4.6vw,8.2vh),84px)] font-semibold leading-[1.02] text-white">
-            Schedule Your <em className="block font-bold text-gold-soft lg:text-[1.08em]">Site Tripping</em>
+            Schedule Your <em className="block font-bold text-gold-soft">Free Site Tripping</em>
           </h2>
           <p className="mx-auto mt-3 max-w-[30em] text-[clamp(16px,1.35vw,25px)] leading-snug text-white/90">See our house models up close and explore the community in person.</p>
         </div>
@@ -273,17 +331,35 @@ export function BookViewing() {
             <form onSubmit={submit} className="mt-3 grid gap-[clamp(8px,1.3vh,14px)]">
               <div className="grid gap-x-8 gap-y-[clamp(8px,1.3vh,14px)] sm:grid-cols-2">
                 <Stacked icon="calendar" label="Date Needed" required htmlFor="bv-date">
-                  <input id="bv-date" type="date" required min={today()} value={f.date} onChange={set('date')} className={INPUT} />
+                  <input id="bv-date" type="date" required min={today()} value={f.date} onChange={set('date')} className={`${INPUT} ${PICKER}`} />
                 </Stacked>
                 <Stacked icon="clock" label="Time Needed" required htmlFor="bv-time">
-                  <input id="bv-time" type="time" required value={f.time} onChange={set('time')} className={INPUT} />
+                  <input id="bv-time" type="time" required value={f.time} onChange={set('time')} className={`${INPUT} ${PICKER}`} />
                 </Stacked>
                 <Stacked icon="pin" label="Pick up point" required htmlFor="bv-pickup">
-                  <input id="bv-pickup" type="text" required maxLength={200} value={f.pickupPoint} onChange={set('pickupPoint')} className={INPUT} />
+                  <Select label="Pick up point" placeholder="Select pick up point" value={f.pickupPoint} options={PICKUP_OPTIONS} onChange={(v) => setF((cur) => ({ ...cur, pickupPoint: v }))} buttonClass={selectLook} />
                 </Stacked>
                 <Stacked icon="route" label="Itinerary" required htmlFor="bv-itinerary">
-                  <input id="bv-itinerary" type="text" required maxLength={300} value={f.itinerary} onChange={set('itinerary')} className={INPUT} />
+                  <Select label="Itinerary" placeholder="Select project to visit" value={f.itinerary} options={projects} onChange={(v) => setF((cur) => ({ ...cur, itinerary: v }))} searchable buttonClass={selectLook} />
+                  {viewed && (viewed.houseModel || viewed.unit) && (
+                    <p className="mt-1 text-[13px] leading-snug text-gold-soft">
+                      {[viewed.houseModel, viewed.unit].filter(Boolean).join(' · ')}
+                      <button type="button" onClick={() => setViewed((v) => (v ? { ...v, houseModel: '', unit: '' } : v))} aria-label="Remove the house model and block and lot" className="ml-2 text-white/70 hover:text-white">
+                        ×
+                      </button>
+                    </p>
+                  )}
                 </Stacked>
+                {f.pickupPoint === IN_PROVINCE && (
+                  <div className="grid gap-x-8 gap-y-[clamp(8px,1.3vh,14px)] sm:col-span-2 sm:grid-cols-2">
+                    <Stacked icon="pin" label="Province" required htmlFor="bv-province">
+                      <Select label="Province" placeholder="Select province" value={chosenProvince} options={provinces} onChange={setProvince} buttonClass={selectLook} />
+                    </Stacked>
+                    <Stacked icon="pin" label="Mall or landmark" required htmlFor="bv-place">
+                      <input id="bv-place" type="text" maxLength={120} value={place} onChange={(e) => setPlace(e.target.value)} className={INPUT} />
+                    </Stacked>
+                  </div>
+                )}
                 <Stacked icon="group" label="Total Pax" required htmlFor="bv-pax">
                   <input id="bv-pax" type="number" required min={1} max={99} inputMode="numeric" value={f.totalPax} onChange={set('totalPax')} className={INPUT} />
                 </Stacked>
@@ -323,16 +399,32 @@ export function BookViewing() {
                     </div>
                   ))}
                 </dl>
-                <dl>
-                  {COMPANY_RIGHT.map(([k, v], i) => (
-                    <div key={k} className="flex items-start gap-3">
-                      <Icon name={['person', 'group', 'phone'][i]} className="mt-0.5 size-6 text-gold" />
-                      <div className="flex flex-wrap gap-x-1.5">
-                        <dt>{k}:</dt>
-                        <dd className="font-bold text-white">{v}</dd>
-                      </div>
+                <dl className="min-w-0 space-y-1.5">
+                  <div className="flex items-start gap-3">
+                    <Icon name="person" className="mt-0.5 size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-wrap gap-x-1.5">
+                      <dt>Area Manager:</dt>
+                      <dd className="font-bold text-white">{AREA_MANAGER}</dd>
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Icon name="group" className="size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt><label htmlFor="bv-seller">Seller's Name:</label></dt>
+                      <dd className="min-w-0 flex-1 basis-[8em]">
+                        <input id="bv-seller" type="text" maxLength={120} autoComplete="off" value={f.sellerName} onChange={set('sellerName')} className={SMALL} />
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Icon name="phone" className="size-6 shrink-0 text-gold" />
+                    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                      <dt><label htmlFor="bv-seller-contact">Seller's Contact Number:</label></dt>
+                      <dd className="min-w-0 flex-1 basis-[8em]">
+                        <input id="bv-seller-contact" type="tel" maxLength={40} autoComplete="off" value={f.sellerContact} onChange={set('sellerContact')} className={SMALL} />
+                      </dd>
+                    </div>
+                  </div>
                 </dl>
               </div>
 
@@ -359,20 +451,11 @@ export function BookViewing() {
             <img
               src="/assets/img/site-tripping-van.webp"
               alt="White PHirst Park Homes van used for free site tripping transfers"
-              width={565}
-              height={310}
+              width={772}
+              height={367}
               loading="lazy"
-              className="mx-auto block w-full max-w-[min(100%,58vh)] [mask-image:radial-gradient(ellipse_at_50%_52%,#000_63%,transparent_77%)] lg:max-w-[min(100%,54vh)]"
+              className="mx-auto block w-full [mask-image:radial-gradient(ellipse_at_50%_50%,#000_64%,transparent_80%)] lg:max-w-[min(100%,76vh)]"
             />
-            <div className="relative z-10 mx-auto -mt-[3%] flex w-[min(100%,560px)] items-center gap-4 bg-[linear-gradient(100deg,#c2933a,#f1d488_45%,#c79a3f)] py-2.5 pl-7 pr-9 shadow-[0_14px_34px_rgba(0,0,0,0.5)] [clip-path:polygon(22px_0,100%_0,calc(100%-22px)_100%,0_100%)]">
-              <span className="grid size-[clamp(48px,3.8vw,68px)] shrink-0 place-items-center rounded-full bg-[#0a1a36] text-gold-soft">
-                <Icon name="van" className="size-[62%]" />
-              </span>
-              <p className="leading-[1.1] text-[#0a1730]">
-                <span className="block text-[clamp(20px,1.95vw,34px)] font-extrabold tracking-wide">FREE VAN TRANSFER</span>
-                <span className="block text-[clamp(17px,1.6vw,28px)] font-semibold">for Site Tripping</span>
-              </p>
-            </div>
           </div>
 
           <div className="mx-auto mt-3 flex max-w-[760px] items-center gap-5 rounded-[22px] border-2 border-[#d9a94a] bg-[#050d1f]/80 px-5 py-3 lg:px-7">
@@ -382,6 +465,7 @@ export function BookViewing() {
               <strong className="mt-1 block font-bold text-gold-soft">The transfer is free of charge.</strong>
             </p>
           </div>
+          <p className="mx-auto mt-2 max-w-[760px] text-center text-[clamp(12px,0.95vw,16px)] italic text-white/75">*Client will only be responsible for any toll fee (if applicable).</p>
         </div>
       </div>
     </section>

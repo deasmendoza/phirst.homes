@@ -17,10 +17,12 @@ interface Props {
   onChange: (value: string) => void;
   disabled?: boolean;
   searchable?: boolean;
+  /** Replaces the closed field's look (the calculator's dark field is the default). */
+  buttonClass?: (state: { open: boolean; selected: boolean }) => string;
 }
 
 /** Dropdown styled to the calculator design: dark field, light list, gold highlight. */
-export function Select({ label, placeholder, value, options, onChange, disabled, searchable }: Props) {
+export function Select({ label, placeholder, value, options, onChange, disabled, searchable, buttonClass }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -100,9 +102,13 @@ export function Select({ label, placeholder, value, options, onChange, disabled,
         aria-controls={`${id}-list`}
         aria-label={`${label}: ${selected ? selected.label : placeholder}`}
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg border bg-[#0b1322] px-3.5 text-left text-[15px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-45 ${
-          open ? 'border-gold' : 'border-white/25 hover:border-white/50'
-        } ${selected ? 'text-white' : 'text-white/55'}`}
+        className={
+          buttonClass
+            ? buttonClass({ open, selected: !!selected })
+            : `flex h-11 w-full items-center justify-between gap-2 rounded-lg border bg-[#0b1322] px-3.5 text-left text-[15px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-45 ${
+                open ? 'border-gold' : 'border-white/25 hover:border-white/50'
+              } ${selected ? 'text-white' : 'text-white/55'}`
+        }
       >
         <span className="min-w-0 truncate">{selected ? selected.label : placeholder}</span>
         <svg viewBox="0 0 20 20" className={`size-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">

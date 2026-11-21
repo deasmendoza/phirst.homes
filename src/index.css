@@ -15,8 +15,17 @@
 html,
 body {
   margin: 0;
-  background: var(--color-night);
   color: #fff;
+}
+
+/* One background for the whole page: night colour, with the soft gold glow of <AuroraBackground /> on top. */
+body {
+  background-color: var(--color-night);
+}
+
+:root {
+  --aurora-color1: rgba(242, 182, 60, 0.16);
+  --aurora-color2: rgba(194, 147, 58, 0.12);
 }
 
 /* Hero menu pills (desktop): thin gold outline on translucent night blue; the first one is solid gold. */
@@ -78,30 +87,149 @@ html {
   }
 }
 
+/* House Models: the showcase paints its own tinted backdrop; drop it so the page background shows. */
+#house-models .snp-root {
+  background: transparent;
+}
+#house-models .snp-bg {
+  display: none;
+}
+
 /* Save / Print: only the computation, on white paper. */
+/* Printed sample computation: one page with only the computation, the logo washed out
+   behind it, and the site address at the foot. margin: 0 also drops the browser's own
+   header and footer (date, page address, page numbers). */
+.print-only {
+  display: none;
+}
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
 @media print {
+  html,
   body {
-    background: #fff;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+  #root > :not(main),
+  main > :not(:has(#calculator)),
+  #calculator > :not(div:has(#calculator-result)),
   header,
-  section[aria-label="PHirst house models"],
-  #locations,
-  #careers,
+  canvas,
   .print-hide {
     display: none !important;
   }
-  #calculator {
-    background: #fff !important;
-    padding: 0 !important;
+  main,
+  main > div:has(#calculator),
+  #calculator,
+  #calculator > div:not(.print-hide),
+  #calculator > div > div:not(.print-hide) {
+    display: block !important;
     min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    max-width: none !important;
+    transform: none !important;
+    zoom: 1 !important;
   }
   #calculator * {
     color: #111 !important;
-    border-color: #999 !important;
+    border-color: #b9b9b9 !important;
     backdrop-filter: none !important;
+    box-shadow: none !important;
   }
-  .print-area {
+  #calculator #calculator-result.print-area {
+    position: relative;
+    display: block !important;
+    width: 210mm !important;
+    padding: 11mm 14mm 27mm !important;
+    margin: 0 !important;
     background: #fff !important;
     border: 0 !important;
+    border-radius: 0 !important;
+    font-size: 12px;
+  }
+  /* Everything except the page furniture is drawn larger so the computation fills the A4 page. */
+  #calculator-result.print-area > :not(.print-only) {
+    zoom: 1.1;
+  }
+  .print-only.print-head {
+    display: flex !important;
+    align-items: center;
+    gap: 4mm;
+    padding-bottom: 4mm;
+    margin-bottom: 6mm;
+    border-bottom: 2px solid #d9b45f;
+  }
+  .print-head img {
+    width: 15mm;
+    height: 15mm;
+  }
+  .print-head-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .print-head-sub {
+    font-size: 11px;
+    color: #555 !important;
+  }
+  .print-head-date {
+    margin-left: auto;
+    font-size: 11px;
+    color: #555 !important;
+  }
+  .print-unit {
+    grid-template-columns: 1fr auto !important;
+    margin-bottom: 4mm !important;
+  }
+  .print-cols {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .print-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 120mm;
+    transform: translate(-50%, -50%);
+    opacity: 0.05;
+    filter: grayscale(1);
+    pointer-events: none;
+  }
+  .print-watermark img {
+    width: 100%;
+    height: auto;
+  }
+  .print-only.print-footer {
+    position: fixed;
+    left: 14mm;
+    right: 14mm;
+    bottom: 9mm;
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8mm;
+    border-top: 1px solid #ccc;
+    padding-top: 3mm;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #555 !important;
+  }
+  .print-footer ul {
+    margin: 0;
+    padding-left: 4mm;
+    list-style: disc;
+  }
+  .print-footer span {
+    white-space: nowrap;
+    font-weight: 600;
   }
 }
