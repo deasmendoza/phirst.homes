@@ -2,17 +2,15 @@ import { PROVINCE_ORDER, projectLabel, provinceOf, type Unit } from '@/lib/inven
 import { TERMS, reservationFee } from '@/lib/compute';
 
 /**
- * The twelve house models in the House Models section, grouped by house type.
+ * The twelve house models in the House Models section, in the order the owner chose.
  * Specs are from PHirst's own model cards (Brenna, Dua, Cartland, Charles, Christie, Corin) and from
  * the model pages already on this site (Alora, Amani, Calista, Unna). A missing number is left out
  * of the text rather than guessed.
  */
 export type HouseStatus = 'available' | 'soon' | 'soldout';
-export type HouseType = 'townhouse' | 'bungalow' | 'single' | 'premium';
 
 export interface House {
   name: string;
-  type: HouseType;
   status: HouseStatus;
   /** Start of the unit type in the inventory sheet (e.g. "ALORA" matches ALORA MID, ALORA END). */
   unit?: string;
@@ -25,34 +23,32 @@ export interface House {
   bathrooms?: number;
   carport?: number;
   note?: string;
-  /** Photos, front first: transparent cut-outs of the house. */
+  /** The 3D model picture shown (and bouncing) in the middle: transparent cut-out. */
+  model3d: string;
+  /** Pictures for the thumbnails at the lower left, front first: transparent cut-outs of the house. */
   images: string[];
 }
 
-// Cut-outs made by design/house-models/make-cutouts.py.
+// Pictures made by design/house-models/make-cutouts.py:
+//   /assets/img/models/3d/  the 3D model of each house (middle of the section, bounces)
+//   /assets/img/models/     the renders (thumbnails at the lower left, until real photos are added)
 const M = (name: string) => `/assets/img/models/${name}.webp`;
+const M3 = (name: string) => `/assets/img/models/3d/${name}.webp`;
 
-// The first model of each type is the one shown when its type is chosen.
+// In the order shown on the page.
 export const HOUSES: House[] = [
-  { name: 'Calista', type: 'townhouse', status: 'available', unit: 'CALISTA', split: true, floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, images: [M('calista')] },
-  { name: 'Amani', type: 'townhouse', status: 'available', unit: 'AMANI', split: true, floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, images: [M('amani')] },
-  { name: 'Alora', type: 'townhouse', status: 'available', unit: 'ALORA', split: true, floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, carport: 1, note: 'Rowhouse with a loft (provision for 1 bedroom).', images: [M('alora')] },
-  { name: 'Aurora', type: 'townhouse', status: 'soon', unit: 'AURORA', images: [M('aurora')] },
-  { name: 'Brenna', type: 'bungalow', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', images: [M('brenna')] },
-  { name: 'Unna', type: 'single', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [M('unna')] },
-  { name: 'Dua', type: 'single', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', images: [M('dua')] },
-  { name: 'Corin 120', type: 'premium', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, images: [M('corin-120')] },
-  { name: 'Cartland 54', type: 'premium', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, images: [M('cartland-54')] },
-  { name: 'Charles 70', type: 'premium', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, images: [M('charles-70')] },
-  { name: 'Christie 90', type: 'premium', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, images: [M('christie-90')] },
-  { name: 'Charles 150', type: 'premium', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', images: [M('charles-150')] },
-];
-
-export const HOUSE_TYPES: { id: HouseType; label: string }[] = [
-  { id: 'townhouse', label: 'Townhouse' },
-  { id: 'bungalow', label: 'Bungalow' },
-  { id: 'single', label: 'Single Detached' },
-  { id: 'premium', label: 'Premium' },
+  { name: 'Calista', status: 'available', unit: 'CALISTA', split: true, floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, model3d: M3('calista'), images: [M('calista')] },
+  { name: 'Amani', status: 'available', unit: 'AMANI', split: true, floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, model3d: M3('amani'), images: [M('amani')] },
+  { name: 'Alora', status: 'available', unit: 'ALORA', split: true, floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, carport: 1, note: 'Rowhouse with a loft (provision for 1 bedroom).', model3d: M3('alora'), images: [M('alora')] },
+  { name: 'Aurora', status: 'soon', unit: 'AURORA', model3d: M3('aurora'), images: [M('aurora')] },
+  { name: 'Unna', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, model3d: M3('unna'), images: [M('unna')] },
+  { name: 'Dua', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', model3d: M3('dua'), images: [M('dua')] },
+  { name: 'Brenna', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', model3d: M3('brenna'), images: [M('brenna')] },
+  { name: 'Cartland 54', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, model3d: M3('cartland-54'), images: [M('cartland-54')] },
+  { name: 'Charles 70', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, model3d: M3('charles-70'), images: [M('charles-70')] },
+  { name: 'Christie 90', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, model3d: M3('christie-90'), images: [M('christie-90')] },
+  { name: 'Corin 120', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, model3d: M3('corin-120'), images: [M('corin-120')] },
+  { name: 'Charles 150', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', model3d: M3('charles-150'), images: [M('charles-150')] },
 ];
 
 const sqm = (n: number) => `${n} sqm`;

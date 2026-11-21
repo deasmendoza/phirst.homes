@@ -211,7 +211,25 @@ def save(im, name):
     im.save(OUT / f"{name}.webp", "WEBP", quality=90, method=6)
 
 
+# The 3D-model pictures (one house per file, white background) in source3d/ -> models/3d/.
+SRC3D = HERE / "source3d"
+OUT3D = OUT / "3d"
+
+
+def make_3d():
+    OUT3D.mkdir(parents=True, exist_ok=True)
+    for path in sorted(SRC3D.glob("*.png")):
+        im = trim(to_rgba(Image.open(path)))
+        im.save(OUT3D / f"{path.stem}.webp", "WEBP", quality=90, method=6)
+    print("3d:", sorted(p.name for p in OUT3D.glob("*.webp")))
+
+
 if __name__ == "__main__":
+    import sys
+
+    if "--3d" in sys.argv:
+        make_3d()
+        raise SystemExit
     for file, names in SOURCES.items():
         rgba = to_rgba(Image.open(SRC / file))
         cuts = [0, *split_points(rgba, len(names)), rgba.width]

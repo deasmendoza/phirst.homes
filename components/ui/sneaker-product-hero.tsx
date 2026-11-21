@@ -109,6 +109,8 @@ export type SneakerProductHeroProps = {
    * rating, price or like button.
    */
   mode?: "product" | "listing"
+  /** The "hold to zoom" loupe on the product, and the tap-to-open on touch. Default true. */
+  loupe?: boolean
   /** "listing" mode: replaces the right-hand column. `select(i)` shows variant `i`. */
   renderAside?: (ctx: { active: number; select: (i: number) => void }) => React.ReactNode
   /** Colour of chips and the button in "listing" mode. Default: the foreground colour. */
@@ -227,6 +229,7 @@ export default function SneakerProductHero({
   onAddToCart,
   onLikeChange,
   mode = "product",
+  loupe: loupeOn = true,
   renderAside,
   accent,
   accentText,
@@ -546,7 +549,7 @@ export default function SneakerProductHero({
   }
   const onStageDown = (e: React.PointerEvent) => {
     lastPointer.current = e.pointerType
-    if (e.pointerType === "touch" || e.button !== 0) return
+    if (!loupeOn || e.pointerType === "touch" || e.button !== 0) return
     const lp = loupeRef.current
     const li = loupeImgRef.current
     const cur = variants[shown.current]
@@ -633,6 +636,7 @@ export default function SneakerProductHero({
       ref={rootRef}
       className={"snp-root" + (className ? " " + className : "")}
       data-mode={mode}
+      data-loupe={loupeOn}
       style={{
         minHeight: height,
         ["--snp-like" as string]: likeColor,
@@ -665,6 +669,7 @@ export default function SneakerProductHero({
 .snp-extra{margin-top:2.4cqw}
 .snp-root[data-mode="listing"] .snp-extra .snp-desc{margin-top:1cqw}
 .snp-root[data-mode="listing"] .snp-desc{margin-top:2.4cqw}
+.snp-root[data-loupe="false"] .snp-stage{cursor:auto}
 .snp-root[data-mode="listing"] .snp-shoe{object-position:50% 100%}
 .snp-root[data-mode="listing"] .snp-shoe.snp-reflect{transform-origin:50% 100%;
   -webkit-mask-image:linear-gradient(to bottom,transparent 45%,#000 100%);mask-image:linear-gradient(to bottom,transparent 45%,#000 100%)}
@@ -876,7 +881,7 @@ a.snp-cta{text-decoration:none}
           onPointerUp={onStageUp}
           onPointerCancel={onStageUp}
           onClick={() => {
-            if (lastPointer.current === "touch") openViewer(0)
+            if (loupeOn && lastPointer.current === "touch") openViewer(0)
           }}
         >
           {variants.map((vv, i) => (
@@ -932,13 +937,17 @@ a.snp-cta{text-decoration:none}
               />
             </div>
           </div>
-          <span className="snp-loupe" ref={loupeRef} aria-hidden="true">
-            <span ref={loupeImgRef} />
-          </span>
-          <span className="snp-hint" data-seen={hintSeen} aria-hidden="true">
-            <span className="snp-hint-fine">Hold to zoom</span>
-            <span className="snp-hint-touch">Tap to view</span>
-          </span>
+          {loupeOn && (
+            <>
+              <span className="snp-loupe" ref={loupeRef} aria-hidden="true">
+                <span ref={loupeImgRef} />
+              </span>
+              <span className="snp-hint" data-seen={hintSeen} aria-hidden="true">
+                <span className="snp-hint-fine">Hold to zoom</span>
+                <span className="snp-hint-touch">Tap to view</span>
+              </span>
+            </>
+          )}
         </div>
 
         <div className="snp-buy">
