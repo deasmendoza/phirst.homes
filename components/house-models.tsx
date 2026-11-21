@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { SectionSeam } from '@/components/ui/section-seam';
 import SneakerProductHero, { type SneakerVariant } from '@/components/ui/sneaker-product-hero';
-import { HOUSES, houseStats, specLines, type House, type HouseStats } from '@/lib/house-models';
+import { HOUSES, houseStats, photoGroups, specLines, type House, type HouseStats } from '@/lib/house-models';
 import { loadInventory, type Unit } from '@/lib/inventory';
 
 // The component reads these three colours; the site is dark, so they are set for dark here.
@@ -33,7 +33,7 @@ function toVariant(h: House, stats: HouseStats | null | undefined): SneakerVaria
     swatch: GOLD,
     tint: GOLD,
     src: h.model3d,
-    gallery: h.images.map((src, i) => ({ src, label: i === 0 ? 'Front' : `Photo ${i + 1}` })),
+    groups: photoGroups(h),
     eyebrow: 'HOUSE SPECS',
     title: '',
     ...copy(h, stats),

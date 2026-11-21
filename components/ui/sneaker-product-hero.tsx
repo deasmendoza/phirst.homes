@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import gsap from "gsap"
+import { createPortal } from "react-dom"
 
 /*
  * Sneaker Product Hero — a product-detail section for one shoe in several
@@ -38,7 +39,12 @@ export type SneakerView = {
   zoom?: number
   /** Mirror it, for the other side of the shoe. */
   mirror?: boolean
+  /** A small version for the thumbnails and the strip. Defaults to `src`. */
+  thumb?: string
 }
+
+/** "listing" mode: a named group of pictures (the menu above the thumbnails). */
+export type SneakerGroup = { label: string; views: SneakerView[] }
 
 export type SneakerVariant = {
   /** Colour name: the swatch label, the alt text and the word behind the shoe. */
@@ -62,6 +68,8 @@ export type SneakerVariant = {
   eyebrow?: string
   title?: string
   description?: string
+  /** "listing" mode: the pictures at the lower left, in menu groups (e.g. Exterior, Interior). Hold to zoom in the viewer. */
+  groups?: SneakerGroup[]
   /** "listing" mode: a labelled extra block under the description, styled like the other labels. */
   extra?: { label: string; text?: string }
   /** The big word behind the product. Defaults to `name`. */
@@ -253,6 +261,8 @@ export default function SneakerProductHero({
   const [toastNote, setToastNote] = React.useState("")
   const [viewer, setViewer] = React.useState(null as number | null)
   const [thumbSet, setThumbSet] = React.useState(active)
+  const [tab, setTab] = React.useState(0)
+  React.useEffect(() => setTab(0), [thumbSet])
 
   const stats = sizeStats(
     sizes.find((s) => s.label === size),
@@ -572,8 +582,14 @@ export default function SneakerProductHero({
   }
 
   const v = variants[thumbSet] ?? variants[0]
-  const views: SneakerView[] = v ? (v.gallery?.length ? v.gallery : FRAMINGS.map((f) => ({ ...f, src: v.src }))) : []
+  const groups = listing ? (v?.groups ?? []) : []
+  const tabIx = Math.min(tab, Math.max(groups.length - 1, 0))
+  const views: SneakerView[] = listing
+    ? (groups[tabIx]?.views ?? [])
+    : v ? (v.gallery?.length ? v.gallery : FRAMINGS.map((f) => ({ ...f, src: v.src }))) : []
   const more = Math.max(0, views.length - 3)
+  const small = (vw: SneakerView): SneakerView => ({ ...vw, src: vw.thumb ?? vw.src })
+  const ZOOM = listing ? 2.5 : 2.2
 
   // Gallery: open, step, close, keyboard.
   const openViewer = (i: number) => {
@@ -616,6 +632,16 @@ export default function SneakerProductHero({
   }, [viewer])
 
   const tintOf = (vv: SneakerVariant) => vv.tint ?? vv.swatch
+  // The custom properties of the section (theme colours, tint, accent). The viewer is drawn outside
+  // the section (see below), so it carries the same ones.
+  const cssVars: React.CSSProperties = {
+    ["--snp-like" as string]: likeColor,
+    ["--snp-tint" as string]: v ? tintOf(variants[active] ?? v) : "transparent",
+    ["--snp-word" as string]: wordSize + "cqw",
+    ["--snp-word-m" as string]: wordSize * 1.8 + "cqw",
+    ...(accent ? { ["--snp-accent" as string]: accent, ["--snp-accent-fg" as string]: accentText ?? "var(--color-background)" } : null),
+    ...style,
+  }
   const cur = variants[active]
   const copy = {
     eyebrow: cur?.eyebrow ?? eyebrow,
@@ -637,23 +663,16 @@ export default function SneakerProductHero({
       className={"snp-root" + (className ? " " + className : "")}
       data-mode={mode}
       data-loupe={loupeOn}
-      style={{
-        minHeight: height,
-        ["--snp-like" as string]: likeColor,
-        ["--snp-tint" as string]: v ? tintOf(variants[active] ?? v) : "transparent",
-        ["--snp-word" as string]: wordSize + "cqw",
-        ["--snp-word-m" as string]: wordSize * 1.8 + "cqw",
-        ...(accent ? { ["--snp-accent" as string]: accent, ["--snp-accent-fg" as string]: accentText ?? "var(--color-background)" } : null),
-        ...style,
-      }}
+      style={{ minHeight: height, ...cssVars }}
       aria-label={title}
     >
       <style>{`
 .snp-root{position:relative;display:flex;flex-direction:column;width:100%;container-type:inline-size;overflow:hidden;isolation:isolate;
   color:var(--color-foreground);background:color-mix(in oklab,var(--color-foreground) 4%,var(--color-background));
   font-family:inherit;-webkit-font-smoothing:antialiased}
-:where(.snp-root) :where(*,*::before,*::after){box-sizing:border-box}
-:where(.snp-root) :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer}
+:where(.snp-root,.snp-portal) :where(*,*::before,*::after){box-sizing:border-box}
+:where(.snp-root,.snp-portal) :where(button){font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer}
+.snp-portal{font-family:inherit;-webkit-font-smoothing:antialiased}
 .snp-root img{max-width:none;display:block}
 .snp-bg{position:absolute;inset:0;z-index:-1;opacity:0;transition:opacity .8s ease;pointer-events:none;
   background:radial-gradient(var(--snp-gs,48% 62%) at calc(50% + var(--mx,0%)) calc(var(--snp-gy,52%) + var(--my,0%)),color-mix(in oklab,var(--t) 42%,transparent),transparent 72%),
@@ -670,6 +689,19 @@ export default function SneakerProductHero({
 .snp-root[data-mode="listing"] .snp-extra .snp-desc{margin-top:1cqw}
 .snp-root[data-mode="listing"] .snp-desc{margin-top:2.4cqw}
 .snp-root[data-loupe="false"] .snp-stage{cursor:auto}
+.snp-tabs{display:flex;flex-wrap:wrap;gap:.6cqw;margin-top:5cqw}
+.snp-chip.snp-tab{padding:.4cqw .85cqw;font-size:max(11px,.9cqw)}
+.snp-tabs + .snp-thumbs{margin-top:1.3cqw}
+.snp-root[data-mode="listing"] .snp-thumbs{gap:1.1cqw}
+.snp-root[data-mode="listing"] .snp-thumbset{gap:1.1cqw}
+.snp-root[data-mode="listing"] .snp-thumb{width:6.6cqw;height:4.5cqw;border-radius:6px}
+.snp-root[data-mode="listing"] .snp-more{width:4.5cqw;height:4.5cqw;border-radius:6px;background:color-mix(in oklab,var(--color-foreground) 10%,transparent);color:var(--color-foreground);border:1px solid color-mix(in oklab,var(--color-foreground) 35%,transparent)}
+.snp-root[data-mode="listing"] .snp-thumb .snp-view,.snp-portal[data-mode="listing"] .snp-rail .snp-view{background-size:cover!important;background-position:center!important}
+.snp-frame[data-hold="true"]{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:zoom-in}
+.snp-frame[data-hold="true"][data-zoom="true"]{cursor:zoom-in}
+.snp-zoomhint{position:absolute;left:14px;bottom:12px;padding:5px 10px;border-radius:999px;background:color-mix(in oklab,var(--color-background) 70%,transparent);
+  font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-muted-foreground);pointer-events:none;transition:opacity .25s}
+.snp-zoomhint[data-zoom="true"]{opacity:0}
 .snp-root[data-mode="listing"] .snp-shoe{object-position:50% 100%}
 .snp-root[data-mode="listing"] .snp-shoe.snp-reflect{transform-origin:50% 100%;
   -webkit-mask-image:linear-gradient(to bottom,transparent 45%,#000 100%);mask-image:linear-gradient(to bottom,transparent 45%,#000 100%)}
@@ -824,6 +856,13 @@ a.snp-cta{text-decoration:none}
   .snp-swatches{margin-top:12px;gap:16px}
   .snp-root[data-mode="listing"] .snp-body{grid-template-columns:1fr;padding-right:20px}
   .snp-chips{gap:8px;margin-top:10px}
+  .snp-tabs{gap:8px;margin-top:18px}
+  .snp-chip.snp-tab{padding:6px 12px;font-size:12px}
+  .snp-root[data-mode="listing"] .snp-thumbs{gap:10px}
+  .snp-root[data-mode="listing"] .snp-thumbset{gap:10px}
+  .snp-root[data-mode="listing"] .snp-thumb{width:88px;height:60px}
+  .snp-root[data-mode="listing"] .snp-more{width:60px;height:60px}
+  .snp-tabs + .snp-thumbs{margin-top:10px}
   .snp-chip{padding:7px 12px;font-size:13px}
   .snp-actions{margin-top:22px;gap:20px}
   .snp-cta{flex:1}
@@ -837,8 +876,14 @@ a.snp-cta{text-decoration:none}
   .snp-nav-l{left:8px}.snp-nav-r{right:8px}
   .snp-vbtn{width:36px;height:36px}
 }
+@media (max-width:760px){
+  .snp-viewer{padding:12px}
+  .snp-rail button{width:60px;height:40px}
+  .snp-nav-l{left:8px}.snp-nav-r{right:8px}
+  .snp-vbtn{width:36px;height:36px}
+}
 @media (prefers-reduced-motion: reduce){
-  .snp-root *{transition:none!important;animation:none!important}
+  .snp-root *,.snp-portal *{transition:none!important;animation:none!important}
 }
 `}</style>
 
@@ -857,11 +902,20 @@ a.snp-cta{text-decoration:none}
               {cur.extra.text ? <p className="snp-desc">{cur.extra.text}</p> : null}
             </div>
           ) : null}
+          {groups.length > 0 && (
+            <div className="snp-tabs snp-fade" role="group" aria-label="Pictures" key={"g" + thumbSet}>
+              {groups.map((g, i) => (
+                <button key={g.label} type="button" className="snp-chip snp-tab" aria-pressed={i === tabIx} onClick={() => setTab(i)}>
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="snp-thumbs">
             <span className="snp-thumbset" ref={thumbsRef}>
               {views.slice(0, 3).map((vw, i) => (
                 <button key={i} type="button" className="snp-thumb" aria-label={`View ${vw.label ?? `photo ${i + 1}`}`} onClick={() => openViewer(i)}>
-                  <span className="snp-view" style={viewStyle(vw)} />
+                  <span className="snp-view" style={viewStyle(small(vw))} />
                 </button>
               ))}
             </span>
@@ -1066,7 +1120,9 @@ a.snp-cta{text-decoration:none}
         </div>
       </div>
 
-      {viewer !== null && views[viewer] && (
+      {viewer !== null && views[viewer] && typeof document !== "undefined" &&
+        createPortal(
+          <div className="snp-portal" data-mode={mode} style={{ ...cssVars, color: "var(--color-foreground)" }}>
         <div className="snp-viewer" role="dialog" aria-modal="true" aria-label={`${title} photos`}>
           <button type="button" className="snp-scrim" aria-label="Close photos" tabIndex={-1} onClick={closeViewer} />
           <div className="snp-box" ref={boxRef}>
@@ -1085,10 +1141,22 @@ a.snp-cta{text-decoration:none}
               className="snp-frame"
               ref={frameRef}
               data-zoom={vZoom}
+              data-hold={listing}
               onClick={(e) => {
-                if ((e.target as HTMLElement).closest("button")) return
+                if (listing || (e.target as HTMLElement).closest("button")) return
                 setVZoom((z) => !z)
               }}
+              onPointerDown={(e) => {
+                if (!listing || (e.target as HTMLElement).closest("button")) return
+                e.currentTarget.setPointerCapture(e.pointerId)
+                const r = e.currentTarget.getBoundingClientRect()
+                const el = e.currentTarget.firstElementChild as HTMLElement | null
+                if (el) el.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`
+                setVZoom(true)
+              }}
+              onPointerUp={() => listing && setVZoom(false)}
+              onPointerCancel={() => listing && setVZoom(false)}
+              onContextMenu={(e) => listing && e.preventDefault()}
               onPointerMove={(e) => {
                 if (!vZoom) return
                 const r = e.currentTarget.getBoundingClientRect()
@@ -1100,11 +1168,12 @@ a.snp-cta{text-decoration:none}
                 className="snp-view"
                 style={{
                   ...viewStyle(views[viewer]),
-                  transform: `${views[viewer].mirror ? "scaleX(-1) " : ""}scale(${vZoom ? 2.2 : 1})`,
+                  transform: `${views[viewer].mirror ? "scaleX(-1) " : ""}scale(${vZoom ? ZOOM : 1})`,
                 }}
                 role="img"
                 aria-label={`${v?.name} ${views[viewer].label ?? ""}`}
               />
+              {listing && <span className="snp-zoomhint" data-zoom={vZoom} aria-hidden="true">Hold to zoom</span>}
               <button type="button" className="snp-vbtn snp-nav-l" aria-label="Previous photo" onClick={() => step(-1)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M15 5l-7 7 7 7" />
@@ -1128,13 +1197,15 @@ a.snp-cta{text-decoration:none}
                     setViewer(i)
                   }}
                 >
-                  <span className="snp-view" style={viewStyle(vw)} />
+                  <span className="snp-view" style={viewStyle(small(vw))} />
                 </button>
               ))}
             </div>
           </div>
         </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </section>
   )
 }

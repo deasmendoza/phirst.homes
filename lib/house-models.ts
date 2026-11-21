@@ -1,5 +1,6 @@
 import { PROVINCE_ORDER, projectLabel, provinceOf, type Unit } from '@/lib/inventory';
 import { TERMS, reservationFee } from '@/lib/compute';
+import { PHOTO_COUNTS } from '@/lib/house-photos';
 
 /**
  * The twelve house models in the House Models section, in the order the owner chose.
@@ -25,31 +26,52 @@ export interface House {
   note?: string;
   /** The 3D model picture shown (and bouncing) in the middle: transparent cut-out. */
   model3d: string;
-  /** Pictures for the thumbnails at the lower left, front first: transparent cut-outs of the house. */
-  images: string[];
+  /** Folder name of the house's pictures and 3D picture. */
+  id: string;
 }
 
 // Pictures made by design/house-models/make-cutouts.py:
 //   /assets/img/models/3d/  the 3D model of each house (middle of the section, bounces)
-//   /assets/img/models/     the renders (thumbnails at the lower left, until real photos are added)
-const M = (name: string) => `/assets/img/models/${name}.webp`;
+//   /assets/img/models/photos/<id>/  the real pictures (lower left), see lib/house-photos.ts
 const M3 = (name: string) => `/assets/img/models/3d/${name}.webp`;
 
 // In the order shown on the page.
 export const HOUSES: House[] = [
-  { name: 'Calista', status: 'available', unit: 'CALISTA', split: true, floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, model3d: M3('calista'), images: [M('calista')] },
-  { name: 'Amani', status: 'available', unit: 'AMANI', split: true, floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, model3d: M3('amani'), images: [M('amani')] },
-  { name: 'Alora', status: 'available', unit: 'ALORA', split: true, floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, carport: 1, note: 'Rowhouse with a loft (provision for 1 bedroom).', model3d: M3('alora'), images: [M('alora')] },
-  { name: 'Aurora', status: 'soon', unit: 'AURORA', model3d: M3('aurora'), images: [M('aurora')] },
-  { name: 'Unna', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, model3d: M3('unna'), images: [M('unna')] },
-  { name: 'Dua', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', model3d: M3('dua'), images: [M('dua')] },
-  { name: 'Brenna', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', model3d: M3('brenna'), images: [M('brenna')] },
-  { name: 'Cartland 54', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, model3d: M3('cartland-54'), images: [M('cartland-54')] },
-  { name: 'Charles 70', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, model3d: M3('charles-70'), images: [M('charles-70')] },
-  { name: 'Christie 90', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, model3d: M3('christie-90'), images: [M('christie-90')] },
-  { name: 'Corin 120', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, model3d: M3('corin-120'), images: [M('corin-120')] },
-  { name: 'Charles 150', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', model3d: M3('charles-150'), images: [M('charles-150')] },
+  { name: 'Calista', status: 'available', unit: 'CALISTA', split: true, floor: 40, lot: [44, 60.5], bedrooms: 2, bathrooms: 1, carport: 1, id: 'calista', model3d: M3('calista') },
+  { name: 'Amani', status: 'available', unit: 'AMANI', split: true, floor: 36, lot: [40, 55], bedrooms: 2, bathrooms: 1, carport: 1, id: 'amani', model3d: M3('amani') },
+  { name: 'Alora', status: 'available', unit: 'ALORA', split: true, floor: 30, lot: [41, 56], bedrooms: 1, bathrooms: 1, carport: 1, note: 'Rowhouse with a loft (provision for 1 bedroom).', id: 'alora', model3d: M3('alora') },
+  { name: 'Aurora', status: 'soon', unit: 'AURORA', id: 'aurora', model3d: M3('aurora') },
+  { name: 'Unna', status: 'available', unit: 'UNNA', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, id: 'unna', model3d: M3('unna') },
+  { name: 'Dua', status: 'available', unit: 'DUA', floor: 48, lot: 70, bedrooms: 2, bathrooms: 2, carport: 1, note: 'Standalone house with a single shared firewall.', id: 'dua', model3d: M3('dua') },
+  { name: 'Brenna', status: 'available', unit: 'BRENNA', floor: 45, lot: 88, bedrooms: 2, bathrooms: 1, carport: 1, note: 'One-storey bungalow, available only in selected projects.', id: 'brenna', model3d: M3('brenna') },
+  { name: 'Cartland 54', status: 'available', unit: 'CARTLAND', floor: 54, lot: 88, bedrooms: 3, bathrooms: 2, carport: 1, id: 'cartland-54', model3d: M3('cartland-54') },
+  { name: 'Charles 70', status: 'available', unit: 'CHARLES', floor: 70, lot: 99, bedrooms: 3, bathrooms: 2, carport: 2, id: 'charles-70', model3d: M3('charles-70') },
+  { name: 'Christie 90', status: 'available', unit: 'CHRISTIE', floor: 90, lot: 110, bedrooms: 3, bathrooms: 3, carport: 2, id: 'christie-90', model3d: M3('christie-90') },
+  { name: 'Corin 120', status: 'available', unit: 'CORIN', floor: 120, lot: 132, bedrooms: 3, bathrooms: 3, carport: 2, id: 'corin-120', model3d: M3('corin-120') },
+  { name: 'Charles 150', status: 'soldout', floor: 150, lot: 99, bedrooms: 3, bathrooms: 3, carport: 2, note: 'Expanded version of Charles 70 (suggested expansion plan).', id: 'charles-150', model3d: M3('charles-150') },
 ];
+
+/** A picture in the lower-left gallery. */
+export interface Photo {
+  src: string;
+  thumb: string;
+  label: string;
+}
+
+/** The lower-left pictures of a house, in menu groups. Empty groups are left out. */
+export function photoGroups(h: House): { label: string; views: Photo[] }[] {
+  const c = PHOTO_COUNTS[h.id];
+  if (!c) return [];
+  const base = `/assets/img/models/photos/${h.id}`;
+  const group = (key: 'exterior' | 'interior' | 'floorplan', label: string) => ({
+    label,
+    views: Array.from({ length: c[key] }, (_, i) => {
+      const nn = String(i + 1).padStart(2, '0');
+      return { src: `${base}/${key}-${nn}.webp`, thumb: `${base}/${key}-${nn}-t.webp`, label: `${label} ${i + 1}` };
+    }),
+  });
+  return [group('exterior', 'Exterior'), group('interior', 'Interior'), group('floorplan', 'Floor plan')].filter((g) => g.views.length > 0);
+}
 
 const sqm = (n: number) => `${n} sqm`;
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
