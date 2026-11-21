@@ -1,7 +1,7 @@
 // Talks to the private admin functions (/api/admin/*). The session lives in an HttpOnly cookie
 // that this page cannot read; every request just sends it along.
 
-export interface AdminUser { id: string; name: string; role: 'superadmin' | 'admin' | 'agent'; permissions: { applications: boolean; bookings: boolean; edit: boolean; remove: boolean } }
+export interface AdminUser { id: string; name: string; role: 'superadmin' | 'admin' | 'agent'; permissions: { dashboard: boolean; applications: boolean; bookings: boolean; edit: boolean; remove: boolean } }
 export type Status = 'New' | 'Contacted' | 'Done';
 export const STATUSES: Status[] = ['New', 'Contacted', 'Done'];
 

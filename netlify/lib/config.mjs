@@ -8,11 +8,11 @@
 const DEFAULT_USERS = "admin:superadmin:Andrea,manager:admin:Marielle,agent:agent:Mike";
 export const MAX_USERS = 10;
 
-// What each role may do. Agents see nothing yet: add permissions here when they are ready.
+// What each role may do. Agents see only the dashboard for now: add permissions here when they are ready.
 const ROLE_PERMISSIONS = {
-  superadmin: { applications: true, bookings: true, edit: true, remove: true },
-  admin: { applications: true, bookings: true, edit: true, remove: true },
-  agent: { applications: false, bookings: false, edit: false, remove: false }
+  superadmin: { dashboard: true, applications: true, bookings: true, edit: true, remove: true },
+  admin: { dashboard: true, applications: true, bookings: true, edit: true, remove: true },
+  agent: { dashboard: true, applications: false, bookings: false, edit: false, remove: false }
 };
 
 export function users() {

@@ -4,7 +4,8 @@
 //   data:   GET applications · GET applications/<id> · PUT applications/<id>/edits · DELETE applications/<id>/edits
 //           PUT applications/<id>/status · PUT applications/<id>/saved · DELETE applications/<id>
 //           GET files/<id>[?download=1]
-//           GET bookings · GET bookings/<id> · PUT bookings/<id>/status
+//           GET bookings · GET bookings/<id> · PUT bookings/<id>/status · POST bookings · DELETE bookings/<id>
+//           GET stats (every signed-in role; counts only)
 //
 // Every data route checks the signed-in person first. Nothing here is public, cached or logged.
 // People, roles and passwords: see netlify/lib/config.mjs and tools/phirst-password-tool.html.
@@ -17,6 +18,7 @@ import {
   recordFailure, requirePermission, requireUser, sessionCookie
 } from "../lib/auth.mjs";
 import * as data from "../lib/admin-data.mjs";
+import { readBooking } from "./bookings.mjs";
 
 // Checked against when the username does not exist, so a wrong username takes as long as a wrong password.
 const DUMMY = "pbkdf2-sha256$600000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
@@ -61,6 +63,11 @@ export default handle(async (req, context) => {
 
   const user = requireUser(req);
   const [area, id, action] = seg;
+
+  if (area === "stats" && method === "GET" && !id) {
+    requirePermission(user, "dashboard");
+    return json({ ok: true, ...(await data.dashboardStats(context)) });
+  }
 
   if (area === "applications") {
     requirePermission(user, "applications");
@@ -112,6 +119,17 @@ export default handle(async (req, context) => {
     requirePermission(user, "bookings");
     if (method === "GET" && !id) return json({ ok: true, bookings: await data.listBookings(context) });
     if (method === "GET" && id && !action) return json({ ok: true, ...(await data.getBooking(id, context)) });
+    if (method === "POST" && !id) {
+      requirePermission(user, "edit");
+      const { booking, error } = readBooking(await readJson(req, 10000), { needEmailOrFacebook: false });
+      if (error) throw new HttpError(422, error);
+      return json({ ok: true, id: await data.createBooking(booking, user, context) });
+    }
+    if (method === "DELETE" && id && !action) {
+      requirePermission(user, "remove");
+      await data.deleteBooking(id, context);
+      return json({ ok: true });
+    }
     if (method === "PUT" && action === "status") {
       requirePermission(user, "edit");
       return json({ ok: true, meta: await data.setBookingStatus(id, (await readJson(req, 2000)).status, user, context) });

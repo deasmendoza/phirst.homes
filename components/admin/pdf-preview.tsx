@@ -59,7 +59,7 @@ export function PdfPreview({ pdf, hasPhoto, photoRemoved, onTogglePhoto }: { pdf
   const count = pages.length || 3;
   return (
     <div ref={host} className="grid gap-4">
-      {error && <p className="rounded-lg bg-[#3a1212] p-3 text-[14px] text-[#ffb4a8]">The PDF can't be shown here, but you can still download it.</p>}
+      {error && <p className="rounded-lg bg-[#2a0d0b] p-3 text-[14px] text-[#ff8f86]">The PDF can't be shown here, but you can still download it.</p>}
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="relative mx-auto w-full max-w-[900px] overflow-hidden rounded-sm shadow-[0_8px_30px_rgba(0,0,0,0.5)]" aria-label={`Page ${i + 1}`}>
           <div data-page={i} className="min-h-[200px] bg-white/90" />

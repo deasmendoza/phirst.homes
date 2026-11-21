@@ -23,7 +23,7 @@ const json = (status, body) =>
 const text = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 /** Checks a submitted form. Returns { booking } when it is complete, or { error } to show the visitor. */
-export function readBooking(body) {
+export function readBooking(body, { needEmailOrFacebook = true } = {}) {
   const b = {
     date: text(body.date, 10),
     time: text(body.time, 5),
@@ -51,7 +51,7 @@ export function readBooking(body) {
   if (!b.clientName) return { error: 'Please give your name.' };
   if (b.clientContact.replace(/\D/g, '').length < 7) return { error: 'Please give a contact number we can reach you on.' };
   if (b.clientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.clientEmail)) return { error: 'Please check your e-mail address.' };
-  if (!b.clientEmail && !b.clientFacebook) return { error: 'Please give your e-mail or your Facebook link / username.' };
+  if (needEmailOrFacebook && !b.clientEmail && !b.clientFacebook) return { error: 'Please give your e-mail or your Facebook link / username.' };
   return { booking: { ...b, ...COMPANY } };
 }
 

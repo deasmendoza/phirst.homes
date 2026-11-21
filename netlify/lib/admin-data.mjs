@@ -55,7 +55,7 @@ export async function listApplications(context) {
     const ans = { ...a, ...(e?.answers || {}) };
     return {
       id: k, receivedAt: a.receivedAt, name: `${ans.firstName} ${ans.lastName}`.trim(), email: ans.email, mobile: ans.mobile,
-      focusProject: ans.focusProject, status: m.status || "New", edited: !!e, deleteAfter: m.deleteAfter || null,
+      focusProject: ans.focusProject, position: ans.position, manager: ans.manager, status: m.status || "New", edited: !!e, deleteAfter: m.deleteAfter || null,
       hasFiles: Object.keys(a.files || {}).filter((x) => x !== "signature").length
     };
   });
@@ -152,13 +152,14 @@ export async function getFile(fid, context) {
 }
 
 // ---- Bookings
+/** Every booking, complete (the admin shows one booking as one card), newest first. */
 export async function listBookings(context) {
   const keys = await listKeys(store("bookings", context));
   const rows = await readMany(keys, async (k) => {
     const b = await getJSON(store("bookings", context), k);
     if (!b) return null;
     const m = (await getJSON(notes(context), `bmeta/${k}`)) || {};
-    return { id: k, receivedAt: b.receivedAt, name: b.clientName, contact: b.clientContact, date: b.date, time: b.time, pax: b.totalPax, itinerary: b.itinerary, status: m.status || "New" };
+    return { ...b, id: k, status: m.status || "New" };
   });
   return rows.sort((a, b) => String(b.receivedAt).localeCompare(String(a.receivedAt)));
 }
@@ -173,4 +174,28 @@ export async function setBookingStatus(id, status, user, context) {
   if (!STATUSES.includes(status)) throw new HttpError(400, "Invalid status.");
   if (!(await store("bookings", context).getMetadata(checkId(id)))) throw new HttpError(404, "Booking not found.");
   return updateMeta(notes(context), `bmeta/${id}`, (m) => ({ ...m, status, statusBy: user.id, statusAt: new Date().toISOString() }));
+}
+
+/** A booking the staff wrote in by hand. It lands in the same store as the ones from the public form, as a new record. */
+export async function createBooking(booking, user, context) {
+  const receivedAt = new Date().toISOString();
+  const id = `${receivedAt}-${crypto.randomUUID().slice(0, 8)}`;
+  await store("bookings", context).setJSON(id, { id, receivedAt, ...booking, addedBy: user.id });
+  return id;
+}
+
+/** Deletes one booking and the admin's notes about it. */
+export async function deleteBooking(id, context) {
+  checkId(id);
+  await store("bookings", context).delete(id);
+  await notes(context).delete(`bmeta/${id}`);
+}
+
+/** What the dashboard needs, and nothing personal: dates, statuses and who it belongs to. Safe for every signed-in role. */
+export async function dashboardStats(context) {
+  const [apps, books] = await Promise.all([listApplications(context), listBookings(context)]);
+  return {
+    applications: apps.map((a) => ({ receivedAt: a.receivedAt, status: a.status, owner: a.manager || "" })),
+    bookings: books.map((b) => ({ receivedAt: b.receivedAt, status: b.status, owner: b.sellerName || "" }))
+  };
 }

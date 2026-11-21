@@ -2,14 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, type Status } from '@/components/admin/api';
 import { autoTicks, loadPicture, makePdf, type Checklist, type SafApplication } from '@/components/admin/saf-build';
 import { PdfPreview } from '@/components/admin/pdf-preview';
-import { BTN, BTN_GOLD, CARD, INPUT, StatusSelect, when } from '@/components/admin/ui';
+import { BTN, BTN_DANGER, BTN_GOLD, CARD, ConfirmDialog, Icon, INPUT, StatusSelect, when, type IconName } from '@/components/admin/ui';
 
 type Answers = Record<string, string | SafApplication['history']>;
 interface Detail {
   application: SafApplication & { id: string; files: Record<string, string> };
   files: Record<string, { id: string; type?: string; size?: number } | null>;
-  edits: { answers: Answers; photoRemoved: boolean; checklist: Partial<Checklist>; editedBy: string; editedAt: string } | null;
-  meta: { status: Status; deleteAfter?: string; savedAt?: string; savedBy?: string };
+  edits: { answers: Answers; photoRemoved: boolean; checklist: Partial<Checklist>; editedBy: string; editedAt: string; log?: { by: string; at: string }[] } | null;
+  meta: { status: Status; statusAt?: string; statusBy?: string; deleteAfter?: string; savedAt?: string; savedBy?: string };
 }
 
 const FIELDS: [string, string, string?][] = [
@@ -79,7 +79,7 @@ export function ApplicationView({ id, canEdit, canRemove, onBack, onChanged }: {
     };
   }, [merged, photoRemoved, overrides, picsReady]);
 
-  if (error) return <div className={CARD}><button className={BTN} onClick={onBack}>← Back</button><p className="mt-4 text-[#ffb4a8]">{error}</p></div>;
+  if (error) return <div className={CARD}><button className={BTN} onClick={onBack}><Icon name="back" size={16} />Applications</button><p className="mt-4 text-[#ff8f86]">{error}</p></div>;
   if (!d || !merged) return <p className="text-white/70">One moment…</p>;
 
   const set = (k: string, v: string) => { setAnswers((a) => ({ ...a, [k]: v })); setDirty(true); };
@@ -137,7 +137,7 @@ export function ApplicationView({ id, canEdit, canRemove, onBack, onChanged }: {
     await api(`applications/${encodeURIComponent(id)}`, 'DELETE');
     onChanged();
     onBack();
-  });
+  }).finally(() => setConfirmDelete(false));
   const download = () => {
     if (!pdf) return;
     const url = URL.createObjectURL(new Blob([pdf as BlobPart], { type: 'application/pdf' }));
@@ -148,44 +148,76 @@ export function ApplicationView({ id, canEdit, canRemove, onBack, onChanged }: {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
-  const fullName = `${merged.firstName} ${merged.lastName}`;
+  const fullName = `${merged.firstName} ${merged.lastName}`.trim();
+  const m = merged as unknown as Record<string, string>;
+  const cardTitle = (icon: IconName, text: string) => (
+    <h3 className="m-0 mb-3 flex items-center gap-3 font-serif text-[22px] font-semibold text-gold-soft"><Icon name={icon} size={26} />{text}</h3>
+  );
+
+  // What has happened to this application, oldest first. Only things that were really recorded.
+  const activity: { at: string; text: string }[] = [{ at: d.application.receivedAt, text: 'Application Submitted' }];
+  for (const e of d.edits?.log ?? []) activity.push({ at: e.at, text: `Answers edited by ${e.by}` });
+  if (d.meta.statusAt) activity.push({ at: d.meta.statusAt, text: `Status changed to ${d.meta.status}${d.meta.statusBy ? ` by ${d.meta.statusBy}` : ''}` });
+  if (d.meta.savedAt) activity.push({ at: d.meta.savedAt, text: `Marked as saved on computer${d.meta.savedBy ? ` by ${d.meta.savedBy}` : ''}` });
+  activity.sort((a, b) => a.at.localeCompare(b.at));
+
+  const details: [string, string][] = [
+    ['Full Name', fullName], ['Mobile Number', m.mobile], ['Email Address', m.email], ['Position', m.position],
+    ['Manager', m.manager], ['Sales Channel', m.salesChannel], ['Date Submitted', when(d.application.receivedAt)],
+  ];
+
   return (
     <div className="grid gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <button className={BTN} onClick={onBack}>← Applications</button>
-        <h2 className="m-0 font-serif text-[26px] font-semibold text-gold-soft">{fullName}</h2>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <button className={BTN} onClick={onBack}><Icon name="back" size={16} />Applications</button>
+        <h1 className="m-0 font-serif text-[clamp(26px,3vw,38px)] font-semibold text-gold-soft">{fullName}</h1>
         <StatusSelect value={d.meta.status} onChange={setStatus} disabled={busy || !canEdit} />
-        <span className="text-[13px] text-white/60">Received: {when(d.application.receivedAt)}</span>
+        <span className="text-[14px] text-white/85 sm:border-l sm:border-white/25 sm:pl-4">Received: {when(d.application.receivedAt)}</span>
+        <div className="flex flex-wrap gap-3 sm:ml-auto">
+          <button className={BTN_GOLD} onClick={download} disabled={!pdf}><Icon name="download" size={18} />Download PDF</button>
+          {canRemove && <button className={BTN_DANGER} onClick={() => setConfirmDelete(true)} disabled={busy}><Icon name="trash" size={18} />Delete Application</button>}
+        </div>
       </div>
-      {note && <p role="status" className="rounded-lg border border-[#d9a94a]/50 bg-gold/10 px-4 py-2 text-[14px] text-gold-soft">{note}</p>}
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <section className={CARD} aria-label="Sellers Accreditation Form">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <h3 className="m-0 mr-auto font-serif text-[20px] font-semibold text-gold-soft">Sellers Accreditation Form (PDF)</h3>
-            <button className={BTN_GOLD} onClick={download} disabled={!pdf}>Download PDF</button>
-          </div>
+      <p className="m-0 flex items-center gap-3 rounded-xl border border-[#d9a94a]/45 bg-black/50 px-4 py-3 text-[14px]">
+        <span className="text-gold-soft"><Icon name="info" size={22} /></span>
+        Applications submitted through the PHIRST public website automatically appear in this admin system.
+      </p>
+      {note && <p role="status" className="m-0 rounded-lg border border-[#d9a94a]/50 bg-gold/10 px-4 py-2 text-[14px] text-gold-soft">{note}</p>}
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <section className={CARD} aria-label="Seller Accreditation Form">
+          {cardTitle('file', 'Seller Accreditation Form')}
           {!pdf ? <p className="py-10 text-center text-white/60">Making the PDF…</p> : (
             <PdfPreview pdf={pdf} hasPhoto={!!d.application.files.photo && canEdit} photoRemoved={photoRemoved} onTogglePhoto={() => { setPhotoRemoved((v) => !v); setDirty(true); }} />
           )}
-          <p className="mt-3 text-[13px] text-white/55">The red × on the 2x2 frame removes the picture from the PDF (it can be put back). Save the edits to keep the change.</p>
+          <p className="mb-0 mt-3 text-[13px] text-white/60">The red × on the 2x2 frame removes the picture from the PDF (it can be put back). Save the edits to keep the change.</p>
         </section>
 
         <div className="grid gap-5">
           <section className={CARD}>
-            <h3 className="m-0 mb-3 font-serif text-[20px] font-semibold text-gold-soft">Uploaded files</h3>
-            <ul className="m-0 grid list-none gap-2 p-0">
+            {cardTitle('user', 'Applicant Details')}
+            <dl className="m-0 grid gap-y-2 text-[15px]">
+              {details.map(([k, v]) => (
+                <div key={k} className="grid grid-cols-[150px_14px_minmax(0,1fr)]"><dt>{k}</dt><dd className="m-0">:</dd><dd className="m-0 break-words">{v || <span className="text-white/35">—</span>}</dd></div>
+              ))}
+            </dl>
+          </section>
+
+          <section className={CARD}>
+            {cardTitle('paperclip', 'Uploaded Files')}
+            <ul className="m-0 grid list-none gap-2.5 p-0">
               {Object.keys(FILE_LABELS).map((k) => {
                 const f = d.files[k];
                 return (
-                  <li key={k} className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-2 text-[14px]">
-                    <span className="mr-auto">{FILE_LABELS[k]}{f && <span className="ml-2 text-white/50">{KB(f.size)}</span>}</span>
+                  <li key={k} className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-2.5 text-[15px] last:border-0">
+                    <span className="mr-auto">{FILE_LABELS[k]}{f && <span className="ml-3 text-[13px] text-white/55">{KB(f.size)}</span>}</span>
                     {f ? (
                       <>
-                        <a className="rounded-full border border-[#d9b35f]/60 px-3 py-1 text-gold-soft no-underline" href={`/api/admin/files/${f.id}`} target="_blank" rel="noopener noreferrer">Open</a>
-                        <a className="rounded-full border border-[#d9b35f]/60 px-3 py-1 text-gold-soft no-underline" href={`/api/admin/files/${f.id}?download=1`}>Download</a>
+                        <a className="inline-flex items-center gap-2 rounded-full border border-[#d9b35f]/60 px-4 py-1.5 text-[13px] font-semibold text-gold-soft no-underline hover:bg-gold/10" href={`/api/admin/files/${f.id}`} target="_blank" rel="noopener noreferrer"><Icon name="eye" size={15} />Open</a>
+                        <a className="inline-flex items-center gap-2 rounded-full border border-[#d9b35f]/60 px-4 py-1.5 text-[13px] font-semibold text-gold-soft no-underline hover:bg-gold/10" href={`/api/admin/files/${f.id}?download=1`}><Icon name="download" size={15} />Download</a>
                       </>
-                    ) : <span className="text-white/40">{d.application.files[k] ? 'file is gone' : 'not uploaded'}</span>}
+                    ) : <span className="text-[13px] text-white/45">{d.application.files[k] ? 'file is gone' : 'not uploaded'}</span>}
                   </li>
                 );
               })}
@@ -193,43 +225,56 @@ export function ApplicationView({ id, canEdit, canRemove, onBack, onChanged }: {
           </section>
 
           <section className={CARD}>
-            <h3 className="m-0 mb-1 font-serif text-[20px] font-semibold text-gold-soft">Checklist of Requirements</h3>
-            <p className="m-0 mb-3 text-[13px] text-white/55">Ticks are automatic; you can change them.</p>
+            {cardTitle('check', 'Checklist of Requirements')}
+            <p className="m-0 mb-2 text-[13px] text-white/60">Ticked automatically from what was uploaded and answered{canEdit ? '; you can change them' : ''}.</p>
             {effective && CHECKS.map(([k, label]) => (
-              <label key={k} className="flex items-start gap-3 py-1.5 text-[14px]">
-                <input type="checkbox" className="mt-1 size-4 accent-[#d9a94a]" checked={effective[k]} disabled={!canEdit} onChange={() => toggleCheck(k)} />
+              <label key={k} className="flex items-start gap-3 py-1.5 text-[15px]">
+                <input type="checkbox" className="mt-1 size-[18px] accent-[#d9a94a]" checked={effective[k]} disabled={!canEdit} onChange={() => toggleCheck(k)} />
                 {label}
               </label>
             ))}
           </section>
 
           <section className={CARD}>
-            <h3 className="m-0 mb-1 font-serif text-[20px] font-semibold text-gold-soft">Saved on my computer</h3>
-            {d.meta.deleteAfter ? (
-              <>
-                <p className="text-[14px]">This application (and its files) will be deleted on <strong>{when(d.meta.deleteAfter)}</strong>.</p>
-                <button className={BTN} disabled={busy || !canEdit} onClick={() => saved(false)}>Cancel the deletion</button>
-              </>
-            ) : (
-              <>
-                <p className="text-[14px] text-white/75">Download the PDF and the files first. When you press the button, this application is deleted from the server after 3 days.</p>
-                <button className={BTN} disabled={busy || !canEdit} onClick={() => saved(true)}>I saved it on my computer</button>
-              </>
-            )}
+            {cardTitle('clock', 'Application Activity')}
+            <ul className="m-0 grid list-none gap-2.5 p-0 text-[14px]">
+              {activity.map((a, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-x-3 border-b border-white/10 pb-2.5 last:border-0">
+                  <span className="size-2 shrink-0 rounded-full bg-gold-soft" />
+                  <span className="mr-auto">{a.text}</span>
+                  <span className="text-white/65">{when(a.at)}</span>
+                </li>
+              ))}
+            </ul>
           </section>
         </div>
       </div>
 
       <section className={CARD}>
+        {cardTitle('file', 'Saved on my computer')}
+        {d.meta.deleteAfter ? (
+          <>
+            <p className="mt-0 text-[14px]">This application (and its files) will be deleted on <strong>{when(d.meta.deleteAfter)}</strong>.</p>
+            <button className={BTN} disabled={busy || !canEdit} onClick={() => saved(false)}>Cancel the deletion</button>
+          </>
+        ) : (
+          <>
+            <p className="mt-0 text-[14px] text-white/80">Download the PDF and the files first. When you press the button, this application is deleted from the server after 3 days.</p>
+            <button className={BTN} disabled={busy || !canEdit} onClick={() => saved(true)}>I saved it on my computer</button>
+          </>
+        )}
+      </section>
+
+      <section className={CARD}>
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <h3 className="m-0 mr-auto font-serif text-[20px] font-semibold text-gold-soft">Answers (editable)</h3>
-          {d.edits && <span className="text-[13px] text-white/60">Edited by {d.edits.editedBy} · {when(d.edits.editedAt)}</span>}
+          <h3 className="m-0 mr-auto font-serif text-[22px] font-semibold text-gold-soft">Answers (editable)</h3>
+          {d.edits && <span className="text-[13px] text-white/65">Edited by {d.edits.editedBy} · {when(d.edits.editedAt)}</span>}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {FIELDS.map(([k, label]) => (
-            <label key={k} className="grid gap-1 text-[13px] font-semibold text-white/80">
+            <label key={k} className="grid gap-1 text-[13px] font-semibold text-white/85">
               {label}
-              <input className={INPUT} value={(merged as unknown as Record<string, string>)[k] ?? ''} disabled={!canEdit} onChange={(e) => set(k, e.target.value)} />
+              <input className={INPUT} value={m[k] ?? ''} disabled={!canEdit} onChange={(e) => set(k, e.target.value)} />
             </label>
           ))}
         </div>
@@ -251,21 +296,10 @@ export function ApplicationView({ id, canEdit, canRemove, onBack, onChanged }: {
         )}
       </section>
 
-      {canRemove && (
-        <section className={`${CARD} border-[#b3261e]/60`}>
-          <h3 className="m-0 mb-2 font-serif text-[20px] font-semibold text-[#ffb4a8]">Delete application</h3>
-          {!confirmDelete ? (
-            <button className={BTN} onClick={() => setConfirmDelete(true)}>Delete…</button>
-          ) : (
-            <div className="grid gap-3">
-              <p className="m-0 text-[14px]">Are you sure? This permanently deletes the application of <strong>{fullName}</strong> and all their uploaded files (including the signature and picture). It cannot be undone.</p>
-              <div className="flex gap-3">
-                <button className="inline-flex h-10 items-center rounded-full bg-[#b3261e] px-5 text-[14px] font-bold text-white disabled:opacity-50" disabled={busy} onClick={remove}>Yes, delete</button>
-                <button className={BTN} onClick={() => setConfirmDelete(false)}>Cancel</button>
-              </div>
-            </div>
-          )}
-        </section>
+      {confirmDelete && (
+        <ConfirmDialog title="Delete this application?" confirmLabel="Yes, delete" busy={busy} onConfirm={remove} onCancel={() => setConfirmDelete(false)}>
+          This permanently deletes the application of <strong>{fullName}</strong> and all of their uploaded files (including the signature and picture). It cannot be undone.
+        </ConfirmDialog>
       )}
     </div>
   );
