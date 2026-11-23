@@ -124,6 +124,23 @@ const spotThenSpot30 = (net: number, rf: number): Schedule => ({
   total: net * 0.1,
 });
 
+/** Restored from the earlier calculator: "SPOT 5%; x% IN n MOS", spot =P22*5%-P28 (split in 2 or 3 for the 60/90-day versions), then =(P22*x%)/n. */
+const spotSplit = (parts: 1 | 2 | 3, restPct: number, months: number) => (net: number, rf: number): Schedule => {
+  const each = (net * 0.05) / parts;
+  const spots: Line[] = [];
+  for (let i = 0; i < parts; i++) {
+    spots.push({ label: parts === 1 ? 'Spot Payment (5%)' : `Spot Payment ${i + 1}`, amount: i === 0 ? each - rf : each });
+  }
+  return {
+    dpPct: 0.05 + restPct,
+    spots,
+    monthly: { amount: (net * restPct) / months, count: months },
+    last: null,
+    extra: [],
+    total: net * (0.05 + restPct),
+  };
+};
+
 /*
  * Spot DP discount (templates' Input Sheet, multiplied by 0 there; applied on the owner's
  * instruction): a share of the 5% spot paid with the reservation, 10% of it when the
@@ -135,6 +152,8 @@ const SPOT_DP_13_UP = { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.0
 // OCS-TEMPLATE-PIF, seller's copy of 7 Nov 2026.
 const PAGIBIG: Term[] = [
   { id: 'pif-10-12', label: '10% in 12 months', schedule: installment(0.1, 12) },
+  { id: 'pif-20-12', label: '20% in 12 months', schedule: installment(0.2, 12) },
+  { id: 'pif-20-18', label: '20% in 18 months', schedule: installment(0.2, 18) },
   { id: 'pif-15-14', label: '15% in 14 months', schedule: installment(0.15, 14) },
   { id: 'pif-10-15', label: '10% in 15 months', schedule: installment(0.1, 15) },
   { id: 'pif-15-16', label: '15% in 16 months', schedule: installment(0.15, 16) },
@@ -146,7 +165,12 @@ const PAGIBIG: Term[] = [
   { id: 'pif-s5-5-10', label: 'Spot 5% + 5% in 10 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 10) },
   { id: 'pif-s5-5-12', label: 'Spot 5% + 5% in 12 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 12) },
   { id: 'pif-s5-10-18', label: 'Spot 5% + 10% in 18 months', discount: SPOT_DP_13_UP, schedule: spotThen(0.1, 18) },
+  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', discount: SPOT_DP_13_UP, schedule: spotSplit(1, 0.1, 15) },
+  { id: 'pif-s5-30-5-13', label: 'Spot 5% in 30 days + 5% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(1, 0.05, 13) },
+  { id: 'pif-s5-60-5-13', label: 'Spot 5% in 60 days + 5% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(2, 0.05, 13) },
+  { id: 'pif-s5-90-5-13', label: 'Spot 5% in 90 days + 5% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(3, 0.05, 13) },
   { id: 'pif-s10', label: 'Spot 10%', schedule: spotOnly(0.1) },
+  { id: 'pif-s20', label: 'Spot 20%', schedule: spotOnly(0.2) },
 ];
 
 // OCS-TEMPLATE-BANK, seller's copy of 7 Nov 2026 (also used for In-House).
@@ -163,6 +187,10 @@ const BANK: Term[] = [
   { id: 'bank-s5-5-10', label: 'Spot 5% + 5% in 10 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 10) },
   { id: 'bank-s5-5-12', label: 'Spot 5% + 5% in 12 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 12) },
   { id: 'bank-s5-5-30d', label: 'Spot 5% + 5% in 30 days', discount: SPOT_DP_UP_TO_12, schedule: spotThenSpot30 },
+  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(1, 0.1, 13) },
+  { id: 'bank-s5-30-10-13', label: 'Spot 5% in 30 days + 10% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(1, 0.1, 13) },
+  { id: 'bank-s5-60-10-13', label: 'Spot 5% in 60 days + 10% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(2, 0.1, 13) },
+  { id: 'bank-s5-90-10-13', label: 'Spot 5% in 90 days + 10% in 13 months', discount: SPOT_DP_13_UP, schedule: spotSplit(3, 0.1, 13) },
   { id: 'bank-s10', label: 'Spot 10%', schedule: spotOnly(0.1) },
 ];
 
