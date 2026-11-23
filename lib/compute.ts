@@ -1,4 +1,4 @@
-// Sample-computation maths, transcribed from the two official templates:
+// Calculator maths, transcribed from the two official templates (sellers' copies of 7 Nov 2026):
 //   OCS-TEMPLATE-PIF  (Pag-IBIG)   and   OCS-TEMPLATE-BANK (Bank / In-House / Cash).
 // Nothing here is estimated or invented: every formula mirrors a cell in those sheets
 // (the cell is quoted beside it). "net" is the template's P22, Net Contract Price after VAT.
@@ -24,15 +24,11 @@ export interface Schedule {
 export interface Term {
   id: string;
   label: string;
-  /** The template's "SPOT 5% RS MONTH" sheet: spot 5% paid on reservation, as RSBS units require. */
-  rsbs?: boolean;
   /**
    * Discount for paying on time, as a share of the contract price before VAT. The templates list these
    * rates beside the computation (multiplied by 0 there); the owner asked for them to be applied.
    */
   discount?: { label: string; rate: number };
-  /** Offered only for some models and only while the unit is far enough from completion; see termsFor. */
-  lowDp?: boolean;
   schedule: (net: number, rf: number, beforeVat: number) => Schedule;
 }
 
@@ -65,24 +61,17 @@ const installment = (pct: number, months: number) => (net: number, rf: number): 
   };
 };
 
-/** "SPOT 5%; x% IN n MOS": spot =P22*5%-P28 (split in 2 or 3 for the 60/90-day versions), then =(P22*x%)/n. */
-const spotThen = (parts: 1 | 2 | 3, restPct: number, months: number) => (net: number, rf: number): Schedule => {
-  const each = (net * 0.05) / parts;
-  const spots: Line[] = [];
-  for (let i = 0; i < parts; i++) {
-    spots.push({ label: parts === 1 ? 'Spot Payment (5%)' : `Spot Payment ${i + 1}`, amount: i === 0 ? each - rf : each });
-  }
-  return {
-    dpPct: 0.05 + restPct,
-    spots,
-    monthly: { amount: (net * restPct) / months, count: months },
-    last: null,
-    extra: [],
-    total: net * (0.05 + restPct),
-  };
-};
+/** Spot 5% (paid with the reservation) then x% in n equal months: =P22*5%-P28, then =(P22*x%)/n. */
+const spotThen = (restPct: number, months: number) => (net: number, rf: number): Schedule => ({
+  dpPct: 0.05 + restPct,
+  spots: [{ label: 'Spot Payment (5%)', amount: net * 0.05 - rf }],
+  monthly: { amount: (net * restPct) / months, count: months },
+  last: null,
+  extra: [],
+  total: net * (0.05 + restPct),
+});
 
-/** "SPOT 20%" (and the bank sheet named "SPOT 10%", whose formula is also =(P22*20%)-P28). */
+/** "SPOT 10%": =P22*10%-P28 in one payment. */
 const spotOnly = (pct: number) => (net: number, rf: number): Schedule => ({
   dpPct: pct,
   spots: [{ label: `Spot Payment (${pct * 100}%)`, amount: net * pct - rf }],
@@ -92,29 +81,89 @@ const spotOnly = (pct: number) => (net: number, rf: number): Schedule => ({
   total: net * pct,
 });
 
+/** The second 5% of a 10% downpayment: =ROUNDUP((P22*5%)/10,-3) for 9 months, the 10th takes the rest. */
+const fivePctInTen = (net: number) => {
+  const amount = roundUpThousand((net * 0.05) / 10);
+  return { monthly: { amount, count: 9 }, last: { label: '10th Month Downpayment', amount: net * 0.05 - amount * 9 } };
+};
+
+/** "2.5%; 2.5% IN 1 MO; 5% IN 10 MOS": =(P22*2.5%)-P28, =P22*2.5%, then 5% over 10 months. */
+const twoHalvesThenTen = (net: number, rf: number): Schedule => ({
+  dpPct: 0.1,
+  spots: [
+    { label: 'Spot Payment (2.5%)', amount: net * 0.025 - rf },
+    { label: '2.5% after 1 month', amount: net * 0.025 },
+  ],
+  ...fivePctInTen(net),
+  extra: [],
+  total: net * 0.1,
+});
+
+/** "5% IN 2 MOS; 5% IN 10 MOS": =((P22*5%)-P28)/2 twice, then 5% over 10 months. */
+const fiveInTwoThenTen = (net: number, rf: number): Schedule => ({
+  dpPct: 0.1,
+  spots: [
+    { label: '1st Month (2.5%)', amount: (net * 0.05 - rf) / 2 },
+    { label: '2nd Month (2.5%)', amount: (net * 0.05 - rf) / 2 },
+  ],
+  ...fivePctInTen(net),
+  extra: [],
+  total: net * 0.1,
+});
+
+/** Bank "SPOT 5%; 5% IN 30 DAYS": =P22*5%-P28, then =P22*5% after 30 days. */
+const spotThenSpot30 = (net: number, rf: number): Schedule => ({
+  dpPct: 0.1,
+  spots: [
+    { label: 'Spot Payment (5%)', amount: net * 0.05 - rf },
+    { label: '5% within 30 days', amount: net * 0.05 },
+  ],
+  monthly: null,
+  last: null,
+  extra: [],
+  total: net * 0.1,
+});
+
+/*
+ * Spot DP discount (templates' Input Sheet, multiplied by 0 there; applied on the owner's
+ * instruction): a share of the 5% spot paid with the reservation, 10% of it when the
+ * downpayment runs up to 12 months and 8% of it when it runs 13 months or more.
+ */
+const SPOT_DP_UP_TO_12 = { label: 'Spot DP Discount (10% of the 5% spot)', rate: 0.05 * 0.1 };
+const SPOT_DP_13_UP = { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.05 * 0.08 };
+
+// OCS-TEMPLATE-PIF, seller's copy of 7 Nov 2026.
 const PAGIBIG: Term[] = [
-  // Owner's instruction (Nov 2026): Alora, Aurora and Amani also get 10% in 12 months under Pag-IBIG.
-  // Same formula as the bank's "10% IN 12 MOS" sheet.
-  { id: 'pif-10-12', label: '10% in 12 months', lowDp: true, schedule: installment(0.1, 12) },
-  { id: 'pif-20-12', label: '20% in 12 months', schedule: installment(0.2, 12) },
-  { id: 'pif-20-18', label: '20% in 18 months', schedule: installment(0.2, 18) },
-  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', rsbs: true, discount: { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.0040 }, schedule: spotThen(1, 0.1, 15) },
-  { id: 'pif-s5-30-5-13', label: 'Spot 5% in 30 days + 5% in 13 months', discount: { label: 'Spot DP Discount (6% of the 5% spot)', rate: 0.0030 }, schedule: spotThen(1, 0.05, 13) },
-  { id: 'pif-s5-60-5-13', label: 'Spot 5% in 60 days + 5% in 13 months', discount: { label: 'Spot DP Discount (3% of the 5% spot)', rate: 0.0015 }, schedule: spotThen(2, 0.05, 13) },
-  { id: 'pif-s5-90-5-13', label: 'Spot 5% in 90 days + 5% in 13 months', discount: { label: 'Spot DP Discount (1% of the 5% spot)', rate: 0.0005 }, schedule: spotThen(3, 0.05, 13) },
-  { id: 'pif-s20', label: 'Spot 20%', schedule: spotOnly(0.2) },
+  { id: 'pif-10-12', label: '10% in 12 months', schedule: installment(0.1, 12) },
+  { id: 'pif-15-14', label: '15% in 14 months', schedule: installment(0.15, 14) },
+  { id: 'pif-10-15', label: '10% in 15 months', schedule: installment(0.1, 15) },
+  { id: 'pif-15-16', label: '15% in 16 months', schedule: installment(0.15, 16) },
+  { id: 'pif-15-18', label: '15% in 18 months', schedule: installment(0.15, 18) },
+  { id: 'pif-25-25-5-10', label: '2.5% spot + 2.5% in 1 month + 5% in 10 months', schedule: twoHalvesThenTen },
+  { id: 'pif-5in2-5in10', label: '5% in 2 months + 5% in 10 months', schedule: fiveInTwoThenTen },
+  { id: 'pif-s5-5-4', label: 'Spot 5% + 5% in 4 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 4) },
+  { id: 'pif-s5-5-6', label: 'Spot 5% + 5% in 6 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 6) },
+  { id: 'pif-s5-5-10', label: 'Spot 5% + 5% in 10 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 10) },
+  { id: 'pif-s5-5-12', label: 'Spot 5% + 5% in 12 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 12) },
+  { id: 'pif-s5-10-18', label: 'Spot 5% + 10% in 18 months', discount: SPOT_DP_13_UP, schedule: spotThen(0.1, 18) },
+  { id: 'pif-s10', label: 'Spot 10%', schedule: spotOnly(0.1) },
 ];
 
+// OCS-TEMPLATE-BANK, seller's copy of 7 Nov 2026 (also used for In-House).
 const BANK: Term[] = [
   { id: 'bank-10-12', label: '10% in 12 months', schedule: installment(0.1, 12) },
+  { id: 'bank-10-14', label: '10% in 14 months', schedule: installment(0.1, 14) },
+  { id: 'bank-10-16', label: '10% in 16 months', schedule: installment(0.1, 16) },
   { id: 'bank-15-14', label: '15% in 14 months', schedule: installment(0.15, 14) },
   { id: 'bank-15-18', label: '15% in 18 months', schedule: installment(0.15, 18) },
-  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', rsbs: true, discount: { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.0040 }, schedule: spotThen(1, 0.1, 13) },
-  { id: 'bank-s5-30-10-13', label: 'Spot 5% in 30 days + 10% in 13 months', discount: { label: 'Spot DP Discount (6% of the 5% spot)', rate: 0.0030 }, schedule: spotThen(1, 0.1, 13) },
-  { id: 'bank-s5-60-10-13', label: 'Spot 5% in 60 days + 10% in 13 months', discount: { label: 'Spot DP Discount (3% of the 5% spot)', rate: 0.0015 }, schedule: spotThen(2, 0.1, 13) },
-  { id: 'bank-s5-90-10-13', label: 'Spot 5% in 90 days + 10% in 13 months', discount: { label: 'Spot DP Discount (1% of the 5% spot)', rate: 0.0005 }, schedule: spotThen(3, 0.1, 13) },
-  // The template names this sheet "SPOT 10%" while its formula takes 20%; kept as is.
-  { id: 'bank-s10', label: 'Spot 10%', schedule: spotOnly(0.2) },
+  { id: 'bank-25-25-5-10', label: '2.5% spot + 2.5% in 1 month + 5% in 10 months', schedule: twoHalvesThenTen },
+  { id: 'bank-5in2-5in10', label: '5% in 2 months + 5% in 10 months', schedule: fiveInTwoThenTen },
+  { id: 'bank-s5-5-2', label: 'Spot 5% + 5% in 2 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 2) },
+  { id: 'bank-s5-5-6', label: 'Spot 5% + 5% in 6 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 6) },
+  { id: 'bank-s5-5-10', label: 'Spot 5% + 5% in 10 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 10) },
+  { id: 'bank-s5-5-12', label: 'Spot 5% + 5% in 12 months', discount: SPOT_DP_UP_TO_12, schedule: spotThen(0.05, 12) },
+  { id: 'bank-s5-5-30d', label: 'Spot 5% + 5% in 30 days', discount: SPOT_DP_UP_TO_12, schedule: spotThenSpot30 },
+  { id: 'bank-s10', label: 'Spot 10%', schedule: spotOnly(0.1) },
 ];
 
 const cashMonthly = (spots: Line[], amount: number, count: number, extra: Line[] = []): Schedule => ({
@@ -134,61 +183,29 @@ const withTotal = (s: Schedule, rf: number): Schedule => ({
     s.extra.reduce((a, l) => a + l.amount, 0),
 });
 
+// P29 =P22-P28-P30, P30 Retention Fee 5000
+const spotCash = (net: number, rf: number) =>
+  withTotal({ dpPct: null, spots: [{ label: 'Spot Payment', amount: net - rf - 5000 }], monthly: null, last: null, extra: [{ label: 'Retention Fee', amount: 5000 }], total: 0 }, rf);
+
 const CASH: Term[] = [
-  {
-    id: 'cash-spot-rs',
-    label: 'Spot Cash (within the reservation month)',
-    discount: { label: 'Spot Cash Discount (7%)', rate: 0.07 },
-    // P29 =P22-P28-P30, P30 Retention Fee 5000
-    schedule: (net, rf) =>
-      withTotal(
-        { dpPct: null, spots: [{ label: 'Spot Payment', amount: net - rf - 5000 }], monthly: null, last: null, extra: [{ label: 'Retention Fee', amount: 5000 }], total: 0 },
-        rf,
-      ),
-  },  {
-    id: 'cash-spot-30',
-    label: 'Spot Cash (within 30 days)',
-    discount: { label: 'Spot Cash Discount (6%)', rate: 0.06 },
-    schedule: (net, rf) =>
-      withTotal(
-        { dpPct: null, spots: [{ label: 'Spot Payment', amount: net - rf - 5000 }], monthly: null, last: null, extra: [{ label: 'Retention Fee', amount: 5000 }], total: 0 },
-        rf,
-      ),
-  },
-  // P29 =(P22-P28)/24
+  { id: 'cash-spot-rs', label: 'Spot Cash (within the reservation month)', discount: { label: 'Spot Cash Discount (7%)', rate: 0.07 }, schedule: spotCash },
+  { id: 'cash-spot-30', label: 'Spot Cash (within 30 days)', discount: { label: 'Spot Cash Discount (6%)', rate: 0.06 }, schedule: spotCash },
+  // P29 =(P22-P28)/24 and /34
   { id: 'cash-def-24', label: 'Deferred Cash 24 months', schedule: (net, rf) => withTotal(cashMonthly([], (net - rf) / 24, 24), rf) },
-  { id: 'cash-def-36', label: 'Deferred Cash 36 months', schedule: (net, rf) => withTotal(cashMonthly([], (net - rf) / 36, 36), rf) },
-  // P29 =P22*5%-P28, P30 =(P22-(P28+P29))/34
+  { id: 'cash-def-34', label: 'Deferred Cash 34 months', schedule: (net, rf) => withTotal(cashMonthly([], (net - rf) / 34, 34), rf) },
+  // P29 =P22*5%-P28, P30 =(P22*95%)/23
   {
-    id: 'cash-s5-95-34',
-    label: 'Spot 5% + 95% in 34 months',
-    schedule: (net, rf) => withTotal(cashMonthly([{ label: 'Spot Payment (5%)', amount: net * 0.05 - rf }], (net - net * 0.05) / 34, 34), rf),
-  },
-  {
-    id: 'cash-s5-95-32',
-    label: 'Spot 5% + 95% in 32 months',
-    schedule: (net, rf) => withTotal(cashMonthly([{ label: 'Spot Payment (5%)', amount: net * 0.05 - rf }], (net - net * 0.05) / 32, 32), rf),
-  },
-  // This one sheet uses P18 (price BEFORE VAT): P29 =P18*20%-P28, P30 =(P18*80%)/20
-  {
-    id: 'cash-s20-80-20',
-    label: 'Spot 20% + 80% in 20 months',
-    schedule: (_net, rf, beforeVat) =>
-      withTotal(cashMonthly([{ label: 'Spot Payment (20%)', amount: beforeVat * 0.2 - rf }], (beforeVat * 0.8) / 20, 20), rf),
-  },
-  // P29 =P22*20%-P28, P30 =P22*80%/23
-  {
-    id: 'cash-s20-80-23',
-    label: 'Spot 20% + 80% in 23 months',
-    schedule: (net, rf) => withTotal(cashMonthly([{ label: 'Spot Payment (20%)', amount: net * 0.2 - rf }], (net * 0.8) / 23, 23), rf),
+    id: 'cash-s5-95-23',
+    label: 'Spot 5% + 95% in 23 months',
+    schedule: (net, rf) => withTotal(cashMonthly([{ label: 'Spot Payment (5%)', amount: net * 0.05 - rf }], (net * 0.95) / 23, 23), rf),
   },
 ];
 
 export const TERMS: Record<Financing, Term[]> = { pagibig: PAGIBIG, bank: BANK, inhouse: BANK, cash: CASH };
 
 export const YEARS: Record<Financing, number[]> = {
-  pagibig: [30, 25, 20, 15, 10],
-  bank: [20, 15, 10, 5], // 20 years added on the owner's instruction (Nov 2026); same 10% rate
+  pagibig: [30, 25, 20, 15, 10], // the template shows 20, 15, 10; 30 and 25 kept on the owner's instruction (Pag-IBIG allows up to 30)
+  bank: [20, 15, 10, 5],
   inhouse: [10, 5],
   cash: [],
 };
@@ -215,8 +232,8 @@ export function loan(financing: Financing, balance: number, net: number, years: 
     return { rate: 0.0625, rateNote: 'Pag-IBIG 6.25% (fixed for 3 years)', amortization, mri: null, total: amortization };
   }
   if (financing === 'bank') {
-    const amortization = balance * pmt(0.1, months);
-    return { rate: 0.1, rateNote: 'Bank 10% (indicative)', amortization, mri: null, total: amortization };
+    const amortization = balance * pmt(0.0775, months);
+    return { rate: 0.0775, rateNote: 'Bank 7.75% (indicative)', amortization, mri: null, total: amortization };
   }
   if (financing === 'inhouse') {
     const rate = years === 10 ? 0.16 : 0.14; // =PMT(16%/12,12*10,-1) / =PMT(14%/12,12*5,-1)
@@ -251,38 +268,22 @@ export function reservationFee(unitType: string, project: string): number | null
  */
 export const pagibigAvailable = (unitType: string) => !/^(UNNA|DUA|BRENNA|CARTLAND|CHARLES|CHRISTIE|CORIN)\b/.test(unitType.toUpperCase());
 
-/** Months from this month to a "Jun 2028"-style date; null when the date is blank or unreadable. */
-export function monthsUntil(date: string, now = new Date()): number | null {
-  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(date.trim());
-  if (!m) return null;
-  const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(m[1].toLowerCase());
-  if (month < 0) return null;
-  return Number(m[2]) * 12 + month - (now.getFullYear() * 12 + now.getMonth());
+/** Payment terms offered for a financing type. */
+export function termsFor(financing: Financing): Term[] {
+  return TERMS[financing];
 }
 
-const LOW_DP_MODELS = /^(ALORA|AURORA|AMANI)\b/;
+/** Units priced at or above this (before VAT) carry 12% VAT (owner's instruction, Nov 2026). */
+export const VAT_THRESHOLD = 3_600_000;
+export const VAT_RATE = 0.12;
 
 /**
- * Payment terms offered for a unit.
- * - RSBS units (reservation sale and book sale: spot 5% downpayment on reservation) get only
- *   the reservation-month spot term, not the Memo Terms instalment plans. Cash terms are left
- *   as they are: the template has no RSBS version of them.
- * - Pag-IBIG "10% in 12 months" is only for Alora, Aurora and Amani, and only when the unit's
- *   estimated date in the inventory is at least 12 months away (a unit near completion cannot
- *   spread its downpayment over a year). A unit with no date in the inventory is treated as far
- *   from completion.
+ * VAT is worked out here, not taken from the inventory: 12% of the price before VAT when that
+ * price is ₱3.6M or more, otherwise none. The price before VAT is the inventory's "TCP w/o VAT"
+ * (its TCP minus any VAT it lists).
  */
-export function termsFor(financing: Financing, unit?: { terms: string; type: string; turnover: string }, now = new Date()): Term[] {
-  let all = TERMS[financing];
-  if (unit) {
-    const months = monthsUntil(unit.turnover, now);
-    const lowDpOk = LOW_DP_MODELS.test(unit.type.toUpperCase()) && (months === null || months >= 12);
-    if (!lowDpOk) all = all.filter((t) => !t.lowDp);
-  } else {
-    all = all.filter((t) => !t.lowDp);
-  }
-  if (financing === 'cash' || !unit || !/RSBS/i.test(unit.terms)) return all;
-  return all.filter((t) => t.rsbs);
+export function vatFor(priceBeforeVat: number): number {
+  return priceBeforeVat >= VAT_THRESHOLD ? priceBeforeVat * VAT_RATE : 0;
 }
 
 export interface Price {
@@ -302,8 +303,8 @@ export interface Price {
  * template the processing fee is discounted by the total discount % and VAT is 12% of what
  * remains, which works out to VAT x (1 - discount / TCP).
  */
-export function price(tcpWithVat: number, vat: number, term?: Term): Price {
-  const tcp = tcpWithVat - vat;
+export function price(tcp: number, term?: Term): Price {
+  const vat = vatFor(tcp);
   const discount = term?.discount ? tcp * term.discount.rate : 0;
   const share = tcp > 0 ? discount / tcp : 0;
   const vatAfter = vat * (1 - share);

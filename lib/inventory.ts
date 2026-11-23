@@ -125,3 +125,8 @@ export function displayTurnover(date: string): string {
   const total = Number(m[2]) * 12 + month + 3;
   return `${MONTHS[total % 12]} ${Math.floor(total / 12)}`;
 }
+
+/** Price before VAT: the inventory's TCP minus any VAT it lists (its "TCP w/o VAT"). */
+export function priceBeforeVat(u: Unit): number {
+  return u.vat != null && u.vat > 0 ? u.tcp - u.vat : u.tcp;
+}
