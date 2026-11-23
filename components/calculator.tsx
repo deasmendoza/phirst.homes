@@ -6,12 +6,17 @@ import { SectionSeam } from '@/components/ui/section-seam';
 import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
+  blockLot,
+  displayTurnover,
   loadInventory,
   priceBeforeVat,
+  phaseLabel,
   projectLabel,
   provinceOf,
   seriesImage,
+  sortUnits,
   titleCase,
+  unitKey,
   type Inventory,
   type Unit,
 } from '@/lib/inventory';
@@ -21,6 +26,7 @@ const MESSENGER = 'https://m.me/marielle.medina.16';
 const peso = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money = (n: number) => `₱${peso.format(n)}`;
 const pct = (n: number) => `${+(n * 100).toFixed(2)}%`;
+const termsLabel = (terms: string) => titleCase(terms).replace('Rsbs', 'RSBS').replace(' The ', ' the ');
 
 const ICONS: Record<string, ReactNode> = {
   pin: <><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></>,
@@ -111,8 +117,9 @@ export function Calculator() {
   const [status, setStatus] = useState<Status>('loading');
   const [inventory, setInventory] = useState<Inventory>({ asOf: null, units: [] });
 
+  const [project, setProject] = useState('');
   const [type, setType] = useState('');
-  const [priceKey, setPriceKey] = useState('');
+  const [unitId, setUnitId] = useState('');
   const [financing, setFinancing] = useState<Financing | ''>('');
   const [termId, setTermId] = useState('');
   const [years, setYears] = useState('');
@@ -132,43 +139,56 @@ export function Calculator() {
     return () => ctl.abort();
   }, []);
 
-  // Public calculator: house model, then the TCPs in today's online inventory for that model.
+  const projectOptions = useMemo<Option[]>(() => {
+    const names = [...new Set(inventory.units.map((u) => u.project))];
+    return names
+      .map((p) => ({ value: p, label: projectLabel(p), group: provinceOf(p) }))
+      .sort((a, b) => PROVINCE_ORDER.indexOf(a.group) - PROVINCE_ORDER.indexOf(b.group) || a.label.localeCompare(b.label));
+  }, [inventory]);
+
   const typeOptions = useMemo<Option[]>(
-    () => [...new Set(inventory.units.map((u) => u.type))].sort().map((t) => ({ value: t, label: titleCase(t) })),
-    [inventory],
+    () =>
+      [...new Set(inventory.units.filter((u) => u.project === project).map((u) => u.type))]
+        .sort()
+        .map((t) => ({ value: t, label: titleCase(t) })),
+    [inventory, project],
   );
 
-  // Every TCP (before VAT) for the model, once per project, grouped by project, lowest first.
-  const priceOptions = useMemo<Option[]>(() => {
-    const seen = new Map<string, { project: string; tcp: number }>();
-    for (const u of inventory.units) {
-      if (u.type !== type) continue;
-      const tcp = Math.round(priceBeforeVat(u) * 100) / 100;
-      seen.set(`${u.project}|${tcp}`, { project: u.project, tcp });
-    }
-    const rank = (p: string) => PROVINCE_ORDER.indexOf(provinceOf(p));
-    return [...seen.entries()]
-      .sort(([, a], [, b]) => rank(a.project) - rank(b.project) || projectLabel(a.project).localeCompare(projectLabel(b.project)) || a.tcp - b.tcp)
-      .map(([key, v]) => ({ value: key, label: money(v.tcp), group: projectLabel(v.project) }));
-  }, [inventory, type]);
+  const units = useMemo(() => sortUnits(inventory.units.filter((u) => u.project === project && u.type === type)), [inventory, project, type]);
 
-  // The units behind the chosen TCP (same project and price); the first stands for them.
-  const matches = useMemo(() => {
-    if (!priceKey) return [] as Unit[];
-    const cut = priceKey.lastIndexOf('|');
-    const project = priceKey.slice(0, cut);
-    const tcp = Number(priceKey.slice(cut + 1));
-    return inventory.units.filter((u) => u.type === type && u.project === project && Math.abs(priceBeforeVat(u) - tcp) < 0.01);
-  }, [inventory, type, priceKey]);
-  const unit: Unit | undefined = matches[0];
-  const lotArea = matches.length && matches.every((u) => u.lotArea === matches[0].lotArea) ? matches[0].lotArea : null;
+  // Block & Lot order: Memo Terms units first, grouped by price from the lowest TCP up;
+  // RSBS units last, grouped under their RSBS tag instead of a price.
+  const unitOptions = useMemo<Option[]>(() => {
+    const manyPhases = new Set(units.map((u) => phaseLabel(u))).size > 1;
+    const isRsbs = (u: Unit) => /RSBS/.test(u.terms);
+    const option = (u: Unit, group: string): Option => ({
+      value: unitKey(u),
+      label: blockLot(u.code),
+      hint: manyPhases ? phaseLabel(u) : undefined,
+      group,
+    });
+    const byPrice = (a: Unit, b: Unit) => priceBeforeVat(a) - priceBeforeVat(b); // sort is stable: block and lot order is kept within a price
+    const memo = units.filter((u) => !isRsbs(u)).sort(byPrice);
+    const rsbs = units.filter(isRsbs).sort((a, b) => a.terms.localeCompare(b.terms) || byPrice(a, b));
+    return [
+      ...memo.map((u) => option(u, `TCP: ${money(priceBeforeVat(u))}`)),
+      ...rsbs.map((u) => option(u, termsLabel(u.terms))),
+    ];
+  }, [units]);
 
+  const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
   const noPagibig = type !== '' && !pagibigAvailable(type);
   const terms = useMemo(() => (financing ? termsFor(financing) : []), [financing]);
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
   const needsYears = financing !== '' && financing !== 'cash';
   const complete = !!unit && !!financing && !!term && (!needsYears || years !== '');
+
+  // Keep the chosen term valid if the list of terms changes.
+  useEffect(() => {
+    if (termId && !terms.some((t) => t.id === termId)) setTermId('');
+    else if (!termId && terms.length === 1) setTermId(terms[0].id);
+  }, [terms, termId]);
 
   const result = useMemo(() => {
     if (!unit || !financing || !term || (needsYears && !years)) return null;
@@ -185,8 +205,9 @@ export function Calculator() {
   }, [unit, financing, term, years, needsYears]);
 
   const reset = () => {
+    setProject('');
     setType('');
-    setPriceKey('');
+    setUnitId('');
     setFinancing('');
     setTermId('');
     setYears('');
@@ -219,8 +240,8 @@ export function Calculator() {
     if (!unit) return MESSENGER;
     const lines = [
       `Project: ${projectLabel(unit.project)}`,
+      `Unit: ${phaseLabel(unit)} ${blockLot(unit.code)} (${unit.code})`,
       `House model: ${titleCase(unit.type)}`,
-      result && result.rf != null ? `TCP: ${money(result.tcp)}` : '',
       `Financing: ${financingLabel}`,
       `Payment term: ${term?.label ?? ''}`,
       needsYears ? `Years to pay: ${years}` : '',
@@ -233,7 +254,7 @@ export function Calculator() {
   };
   // Carries the unit being viewed into the Book a Viewing form.
   const viewing = unit
-    ? `/book-a-viewing?${new URLSearchParams({ project: projectLabel(unit.project), model: titleCase(unit.type) })}`
+    ? `/book-a-viewing?${new URLSearchParams({ project: projectLabel(unit.project), model: titleCase(unit.type), unit: [phaseLabel(unit), blockLot(unit.code)].filter(Boolean).join(' ') })}`
     : '/book-a-viewing';
 
   const asOf = inventory.asOf
@@ -264,17 +285,31 @@ export function Calculator() {
               if (complete) setComputed(true);
             }}
           >
-            <Field icon="home" label="House Model">
+            <Field icon="pin" label="Location / Project">
               <Select
-                label="House Model"
-                placeholder={status === 'loading' ? 'Loading…' : 'Select a house model'}
-                value={type}
-                options={typeOptions}
+                label="Location / Project"
+                placeholder={status === 'loading' ? 'Loading…' : 'Select a project'}
+                value={project}
+                options={projectOptions}
                 disabled={status !== 'ready'}
                 searchable
                 onChange={(v) => {
+                  setProject(v);
+                  setType('');
+                  setUnitId('');
+                }}
+              />
+            </Field>
+            <Field icon="home" label="House Model">
+              <Select
+                label="House Model"
+                placeholder="Select a house model"
+                value={type}
+                options={typeOptions}
+                disabled={!project}
+                onChange={(v) => {
                   setType(v);
-                  setPriceKey('');
+                  setUnitId('');
                   if (financing === 'pagibig' && !pagibigAvailable(v)) {
                     setFinancing('');
                     setTermId('');
@@ -283,8 +318,8 @@ export function Calculator() {
                 }}
               />
             </Field>
-            <Field icon="coins" label="TCP">
-              <Select label="TCP" placeholder="Select a TCP" value={priceKey} options={priceOptions} disabled={!type} searchable onChange={setPriceKey} />
+            <Field icon="layers" label="Block & Lot">
+              <Select label="Block & Lot" placeholder="Select block & lot" value={unitId} options={unitOptions} disabled={!type} searchable onChange={setUnitId} />
             </Field>
             <Field icon="card" label="Financing">
               <Select
@@ -404,14 +439,25 @@ export function Calculator() {
                 </div>
                 <div>
                   <div className="text-[24px] font-bold leading-tight text-white">{projectLabel(result.unit.project)}</div>
+                  <div className="mt-0.5 text-[15px] text-white/85">
+                    {phaseLabel(result.unit) && <>{phaseLabel(result.unit)} <span className="mx-1.5 text-white/40">|</span></>}
+                    {blockLot(result.unit.code)}
+                  </div>
                   <div className="mt-1.5 text-[24px] font-bold leading-tight text-white">{titleCase(result.unit.type)}</div>
                   <div className="mt-0.5 text-[15px] text-white/85">
-                    {lotArea != null && <>Lot Area: {lotArea} sqm</>}
-                    {lotArea != null && result.unit.floorArea != null && <span className="mx-1.5 text-white/40">|</span>}
+                    {result.unit.lotArea != null && <>Lot Area: {result.unit.lotArea} sqm</>}
+                    {result.unit.lotArea != null && result.unit.floorArea != null && <span className="mx-1.5 text-white/40">|</span>}
                     {result.unit.floorArea != null && <>Floor Area: {result.unit.floorArea} sqm</>}
                   </div>
                 </div>
                 <div className="space-y-1.5 text-[15px] text-white md:border-l md:border-white/15 md:pl-6">
+                  {result.unit.terms && (
+                    <div className="mb-2.5 inline-block rounded-full bg-[linear-gradient(180deg,#ffd77a,#f2b63c)] px-4 py-1 text-sm font-bold text-[#14100a]">
+                      {termsLabel(result.unit.terms)}
+                    </div>
+                  )}
+                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {displayTurnover(result.unit.turnover)}</div>}
+                  {result.unit.houseCon && <div className="flex items-center gap-2.5"><Icon name="tools" className="size-[18px] text-gold" /> Construction: {result.unit.houseCon}</div>}
                   {asOf && <div className="pt-1.5 text-[13px] text-white/70">Inventory as of {asOf}</div>}
                 </div>
               </div>
