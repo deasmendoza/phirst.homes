@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { api, STATUSES, type AdminUser } from '@/components/admin/api';
 import { welcomeName } from '@/components/admin/shell';
-import { CARD, Icon, type IconName } from '@/components/admin/ui';
+import { Icon, type IconName } from '@/components/admin/ui';
 
-// The dashboard. Every number comes from the saved applications and bookings (counts only), never from sample figures.
+// The dashboard, in the glass look. Every number comes from the saved applications and bookings (counts only),
+// never from sample figures.
 
 interface Stats {
   applications: { receivedAt: string; status: string; owner: string }[];
@@ -11,9 +12,8 @@ interface Stats {
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const GOLD = '#d9a94a';
-const GOLD_SOFT = '#ffd77a';
 const manila = (iso: string) => new Date(new Date(iso).getTime() + 8 * 3600000); // read with getUTC*: Manila wall-clock
+const rise = (i: number) => ({ '--gd-i': i }) as CSSProperties;
 
 /** The last 12 months, oldest first, with how many of the given records came in each month. */
 function perMonth(rows: { receivedAt: string }[]) {
@@ -32,103 +32,140 @@ function perMonth(rows: { receivedAt: string }[]) {
 
 function Spark({ values }: { values: number[] }) {
   const max = Math.max(1, ...values);
-  const pts = values.map((v, i) => [(i / (values.length - 1)) * 100, 28 - (v / max) * 24] as const);
-  const d = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const last = pts[pts.length - 1];
+  const d = values.map((v, i) => `${i ? 'L' : 'M'}${((i / (values.length - 1)) * 100).toFixed(1)},${(28 - (v / max) * 24).toFixed(1)}`).join(' ');
   return (
-    <svg viewBox="0 0 100 32" preserveAspectRatio="none" className="h-10 w-full" aria-hidden="true">
-      <path d={d} fill="none" stroke={GOLD} strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
-      <circle cx={last[0]} cy={last[1]} r="2" fill={GOLD_SOFT} />
+    <svg className="gd-spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+      <path d={d} />
     </svg>
   );
 }
 
-function Metric({ icon, label, value, series }: { icon: IconName; label: string; value: number; series: number[] }) {
+function Metric({ icon, label, value, series, tone, i }: { icon: IconName; label: string; value: number; series: number[]; tone?: 'gold'; i: number }) {
   return (
-    <section className={`${CARD} !p-4`}>
-      <div className="flex items-center gap-4">
-        <span className="text-gold-soft"><Icon name={icon} size={38} /></span>
-        <div>
-          <p className="m-0 font-serif text-[16px] text-white/90">{label}</p>
-          <p className="m-0 font-serif text-[36px] font-semibold leading-none text-white">{value}</p>
+    <article className="gd-metric gd-enter" data-tone={tone} style={rise(i)}>
+      <div className="gd-metric-head"><span>{label}</span><span className="gd-metric-icon" aria-hidden="true"><Icon name={icon} size={14} /></span></div>
+      <strong className="gd-metric-value">{value}</strong>
+      <div className="gd-metric-caption"><span>last 12 months</span></div>
+      <Spark values={series} />
+    </article>
+  );
+}
+
+function Tile({ icon, label, value, i }: { icon: IconName; label: string; value: number; i: number }) {
+  return (
+    <article className="gd-metric gd-tile gd-enter" style={rise(i)}>
+      <span className="gd-metric-icon" aria-hidden="true"><Icon name={icon} size={18} /></span>
+      <div><small>{label}</small><strong>{value}</strong></div>
+    </article>
+  );
+}
+
+function Panel({ title, subtitle, action, i, children }: { title: string; subtitle?: string; action?: ReactNode; i: number; children: ReactNode }) {
+  return (
+    <section className="gd-panel gd-enter" style={rise(i)}>
+      <header className="gd-panel-head">
+        <div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>
+        {action}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+type Point = [number, number];
+const curve = (points: Point[]) =>
+  points.reduce((path, [x, y], index) => {
+    if (index === 0) return `M ${x} ${y}`;
+    const [px, py] = points[index - 1];
+    const mid = (x + px) / 2;
+    return `${path} C ${mid} ${py}, ${mid} ${y}, ${x} ${y}`;
+  }, '');
+
+/** Applications and site trippings per month, as two smooth lines. Hover (or Tab to) a month to read it. */
+function MonthlyChart({ labels, apps, trips }: { labels: string[]; apps: number[]; trips: number[] }) {
+  const [active, setActive] = useState<number | null>(null);
+  const H = 204, W = 600;
+  const top = Math.ceil(Math.max(5, ...apps, ...trips) / 4) * 4;
+  const pts = (values: number[]): Point[] => values.map((v, i) => [(i * W) / Math.max(1, values.length - 1), H - (v / top) * H]);
+  const a = pts(apps), t = pts(trips);
+  const ticks = [top, (top * 3) / 4, top / 2, top / 4, 0];
+  return (
+    <figure aria-label="Applications and site trippings per month, last 12 months">
+      <div className="gd-revenue-main">
+        <div className="gd-chart-y" aria-hidden="true">{ticks.map((v) => <span key={v}>{v}</span>)}</div>
+        <div className="gd-line-plot" onMouseLeave={() => setActive(null)}>
+          <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+            {ticks.map((v, i) => <line className="gd-grid-line" key={v} x1="0" x2={W} y1={(H * i) / 4} y2={(H * i) / 4} />)}
+            <path className="gd-chart-path" data-tone="gold" d={curve(a)} />
+            <path className="gd-chart-path" data-tone="ink" d={curve(t)} />
+            {active !== null && (
+              <g>
+                <line className="gd-line-cursor" x1={a[active][0]} x2={a[active][0]} y1="0" y2={H} />
+                <circle cx={a[active][0]} cy={a[active][1]} r="4" fill="var(--gd-gold)" />
+                <circle cx={t[active][0]} cy={t[active][1]} r="4" fill="var(--gd-graph-ink)" />
+              </g>
+            )}
+          </svg>
+          <div className="gd-chart-zones">
+            {labels.map((label, i) => (
+              <button type="button" key={i} aria-label={`${label}: ${apps[i]} applications, ${trips[i]} site trippings`} aria-pressed={active === i}
+                onFocus={() => setActive(i)} onBlur={() => setActive(null)} onMouseEnter={() => setActive(i)} onClick={() => setActive(i)} />
+            ))}
+          </div>
+          {active !== null && (
+            <div className="gd-line-tooltip" style={{ '--gd-tooltip-x': `${(active / (labels.length - 1)) * 100}%` } as CSSProperties}>
+              <strong>{labels[active]}</strong>
+              <span>Applications <b>{apps[active]}</b></span>
+              <span>Site trippings <b>{trips[active]}</b></span>
+            </div>
+          )}
         </div>
       </div>
-      <div className="mt-2"><Spark values={series} /></div>
-    </section>
+      <div className="gd-chart-axis" aria-hidden="true">{labels.map((l, i) => <span key={i}>{l}</span>)}</div>
+    </figure>
   );
 }
 
-function Performance({ apps, books }: { apps: { n: number; m: number }[]; books: { n: number }[] }) {
-  const max = Math.max(5, ...apps.map((a) => a.n), ...books.map((b) => b.n));
-  const top = Math.ceil(max / 5) * 5;
-  const W = 640, H = 220, L = 34, B = 24, T = 10;
-  const bw = (W - L) / 12;
-  const y = (v: number) => T + (H - T - B) * (1 - v / top);
-  const line = books.map((b, i) => `${i ? 'L' : 'M'}${(L + bw * i + bw / 2).toFixed(1)},${y(b.n).toFixed(1)}`).join(' ');
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label="Applications and site trippings per month, last 12 months">
-      {[0, 1, 2, 3, 4].map((i) => {
-        const v = (top / 4) * i;
-        return (
-          <g key={i}>
-            <line x1={L} x2={W} y1={y(v)} y2={y(v)} stroke="rgba(255,255,255,0.1)" />
-            <text x={L - 6} y={y(v) + 4} textAnchor="end" fontSize="11" fill="rgba(255,255,255,0.8)">{Math.round(v)}</text>
-          </g>
-        );
-      })}
-      {apps.map((a, i) => (
-        <g key={i}>
-          <rect x={L + bw * i + bw * 0.22} y={y(a.n)} width={bw * 0.56} height={Math.max(0, H - B - y(a.n))} rx="2" fill="url(#goldbar)" />
-          <text x={L + bw * i + bw / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.85)">{MONTHS[a.m]}</text>
-        </g>
-      ))}
-      <path d={line} fill="none" stroke="#fff" strokeWidth="1.8" />
-      {books.map((b, i) => <circle key={i} cx={L + bw * i + bw / 2} cy={y(b.n)} r="3.2" fill="#fff" stroke="#0a0a0a" strokeWidth="1" />)}
-      <defs>
-        <linearGradient id="goldbar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#e8c473" /><stop offset="1" stopColor="#a67c2c" /></linearGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function Donut({ parts, total }: { parts: { label: string; n: number; color: string }[]; total: number }) {
-  const R = 70, C = 2 * Math.PI * R;
+/** Application status as a ring with a clickable list. */
+function StatusRing({ parts, total }: { parts: { label: string; n: number; tone: 'gold' | 'ink' | 'teal' }[]; total: number }) {
+  const [active, setActive] = useState<number | null>(null);
+  const R = 47;
   let acc = 0;
   return (
-    <div className="flex flex-wrap items-center justify-center gap-6">
-      <svg viewBox="0 0 200 200" className="size-[190px]" role="img" aria-label="Application status">
-        <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="30" />
-        {total > 0 && parts.map((p) => {
-          const len = (p.n / total) * C;
-          const el = <circle key={p.label} cx="100" cy="100" r={R} fill="none" stroke={p.color} strokeWidth="30" strokeDasharray={`${len} ${C - len}`} strokeDashoffset={-acc} transform="rotate(-90 100 100)" />;
-          acc += len;
-          return el;
-        })}
-        <text x="100" y="102" textAnchor="middle" fontSize="34" fontFamily="serif" fill="#fff">{total}</text>
-        <text x="100" y="124" textAnchor="middle" fontSize="13" fill="rgba(255,255,255,0.85)">Total</text>
-      </svg>
-      <ul className="m-0 grid list-none gap-3 p-0 text-[15px]">
-        {parts.map((p) => (
-          <li key={p.label} className="flex items-center gap-3">
-            <span className="size-3.5 rounded-full" style={{ background: p.color }} />
-            <span className="w-24">{p.label}</span>
-            <span className="font-semibold">{total ? Math.round((p.n / total) * 100) : 0}%</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function Tile({ icon, label, value }: { icon: IconName; label: string; value: number }) {
-  return (
-    <section className={`${CARD} flex items-center gap-4 !p-4`}>
-      <span className="text-gold-soft"><Icon name={icon} size={34} /></span>
-      <div>
-        <p className="m-0 text-[14px] text-white/85">{label}</p>
-        <p className="m-0 font-serif text-[30px] font-semibold leading-tight">{value}</p>
+    <div className="gd-device">
+      <div className="gd-device-ring">
+        <svg viewBox="0 0 124 124" role="img" aria-label="Application status">
+          <circle cx="62" cy="62" r={R} fill="none" stroke="var(--gd-track)" strokeWidth="14" />
+          <g transform="rotate(-90 62 62)">
+            {total > 0 && parts.map((p, i) => {
+              const ratio = (p.n / total) * 100;
+              const el = (
+                <circle key={p.label} cx="62" cy="62" r={R} pathLength="100" fill="none" strokeWidth="14" data-tone={p.tone} className="gd-device-segment"
+                  data-muted={active !== null && i !== active} strokeDasharray={`${Math.max(0, ratio - 1.1)} 100`} strokeDashoffset={-acc} />
+              );
+              acc += ratio;
+              return el;
+            })}
+          </g>
+        </svg>
+        <div className="gd-device-total">
+          <strong>{active === null ? total : parts[active].n}</strong>
+          <span>{active === null ? 'Total' : parts[active].label}</span>
+        </div>
       </div>
-    </section>
+      <div className="gd-device-list">
+        {parts.map((p, i) => {
+          const pct = total ? Math.round((p.n / total) * 100) : 0;
+          return (
+            <button type="button" key={p.label} aria-pressed={active === i} aria-label={`${p.label}, ${pct}% of applications`} onClick={() => setActive(active === i ? null : i)}>
+              <span><i data-tone={p.tone} aria-hidden="true" />{p.label}</span>
+              <span className="gd-mix-track" aria-hidden="true"><i data-tone={p.tone} style={{ width: `${pct}%` }} /></span>
+              <strong>{pct}%</strong>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -146,71 +183,65 @@ export function Dashboard({ user }: { user: AdminUser }) {
     for (const r of [...(stats?.applications ?? []), ...(stats?.bookings ?? [])]) if (r.owner.trim()) names.add(r.owner.trim());
     return [...names].sort((a, b) => a.localeCompare(b));
   }, [stats]);
-  const mine = <T extends { owner: string }>(rows: T[]) => (who ? rows.filter((r) => r.owner.trim() === who) : rows);
 
   const data = useMemo(() => {
+    const mine = <T extends { owner: string }>(rows: T[]) => (who ? rows.filter((r) => r.owner.trim() === who) : rows);
     const apps = mine(stats?.applications ?? []);
     const books = mine(stats?.bookings ?? []);
     const count = (rows: { status: string }[], s: string) => rows.filter((r) => r.status === s).length;
     const thisMonth = (rows: { receivedAt: string }[]) => perMonth(rows)[11].n;
     return { apps, books, appMonths: perMonth(apps), bookMonths: perMonth(books), count, thisMonth };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats, who]);
 
   const { apps, books, appMonths, bookMonths, count, thisMonth } = data;
-  const statusColors = [GOLD, '#ffffff', '#6f6f6f'];
+  const tones = ['gold', 'ink', 'teal'] as const;
 
   return (
-    <div className="grid gap-6">
-      <div>
-        <h1 className="m-0 font-serif text-[clamp(30px,4vw,46px)] font-semibold text-white">
-          Welcome, <span className="text-gold-soft">{welcomeName(user)}</span>
-        </h1>
-        <p className="m-0 mt-1 text-[17px] text-white/90">Here&apos;s what&apos;s happening with your team today.</p>
-      </div>
+    <>
+      <header className="gd-view-head">
+        <div>
+          <h1>Welcome, <em>{welcomeName(user)}</em></h1>
+          <p>Here&apos;s what&apos;s happening with your team today.</p>
+        </div>
+        <div className="gd-view-actions">
+          <div className="gd-period" role="group" aria-label="Team">
+            {['', ...people].map((p) => (
+              <button type="button" key={p || 'all'} aria-pressed={who === p} onClick={() => setWho(p)}>{p || 'All Team'}</button>
+            ))}
+          </div>
+        </div>
+      </header>
 
-      <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Team">
-        {['', ...people].map((p) => (
-          <button key={p || 'all'} onClick={() => setWho(p)} aria-pressed={who === p} className={`h-10 shrink-0 rounded-full border px-6 text-[15px] ${who === p ? 'border-transparent bg-[linear-gradient(100deg,#c2933a,#ecca7c_50%,#c79a3f)] font-bold text-[#141414]' : 'border-[#d9b35f]/50 text-white hover:bg-gold/10'}`}>
-            {p || 'All Team'}
-          </button>
-        ))}
-      </nav>
-
-      {err && <p className="m-0 text-[#ff8f86]">{err}</p>}
-      {!stats && !err ? <p className="m-0 text-white/70">One moment…</p> : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric icon="file" label="Total Applications" value={apps.length} series={appMonths.map((m) => m.n)} />
-            <Metric icon="calendar" label="Total Trippings" value={books.length} series={bookMonths.map((m) => m.n)} />
-            <Metric icon="clock" label="New Applications" value={count(apps, 'New')} series={appMonths.map((m) => m.n)} />
-            <Metric icon="check" label="Trippings Done" value={count(books, 'Done')} series={bookMonths.map((m) => m.n)} />
+      {err && <p className="gd-empty" role="alert">{err}</p>}
+      {!stats && !err ? <p className="gd-empty" role="status">One moment…</p> : (
+        <div className="gd-board">
+          <div className="gd-metric-grid">
+            <Metric i={0} tone="gold" icon="file" label="Total Applications" value={apps.length} series={appMonths.map((m) => m.n)} />
+            <Metric i={1} icon="calendar" label="Total Trippings" value={books.length} series={bookMonths.map((m) => m.n)} />
+            <Metric i={2} icon="clock" label="New Applications" value={count(apps, 'New')} series={appMonths.map((m) => m.n)} />
+            <Metric i={3} icon="check" label="Trippings Done" value={count(books, 'Done')} series={bookMonths.map((m) => m.n)} />
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
-            <section className={CARD}>
-              <h2 className="m-0 mb-3 flex items-center gap-3 font-serif text-[22px] font-semibold"><span className="text-gold-soft"><Icon name="dashboard" size={26} /></span>Performance Overview <span className="ml-auto rounded-lg border border-[#d9b35f]/50 px-3 py-1 font-sans text-[13px] font-normal">Last 12 Months</span></h2>
-              <Performance apps={appMonths} books={bookMonths} />
-              <p className="m-0 mt-2 flex justify-center gap-6 text-[14px]">
-                <span className="flex items-center gap-2"><span className="size-3 rounded-full bg-gold" />Applications</span>
-                <span className="flex items-center gap-2"><span className="size-3 rounded-full bg-white" />Site Trippings</span>
-              </p>
-            </section>
-            <section className={CARD}>
-              <h2 className="m-0 mb-4 flex items-center gap-3 font-serif text-[22px] font-semibold"><span className="text-gold-soft"><Icon name="chart" size={26} /></span>Application Status</h2>
-              <Donut total={apps.length} parts={STATUSES.map((s, i) => ({ label: s, n: count(apps, s), color: statusColors[i] }))} />
-            </section>
+          <div className="gd-two">
+            <Panel i={4} title="Performance Overview" subtitle="Last 12 months" action={
+              <div className="gd-legend"><span><i data-tone="gold" aria-hidden="true" />Applications</span><span><i data-tone="ink" aria-hidden="true" />Site Trippings</span></div>
+            }>
+              <MonthlyChart labels={appMonths.map((m) => MONTHS[m.m])} apps={appMonths.map((m) => m.n)} trips={bookMonths.map((m) => m.n)} />
+            </Panel>
+            <Panel i={5} title="Application Status">
+              <StatusRing total={apps.length} parts={STATUSES.map((s, i) => ({ label: s, n: count(apps, s), tone: tones[i] }))} />
+            </Panel>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Tile icon="file" label="Applications" value={apps.length} />
-            <Tile icon="file" label="Applications this month" value={thisMonth(apps)} />
-            <Tile icon="car" label="Trippings" value={books.length} />
-            <Tile icon="calendar" label="Trippings this month" value={thisMonth(books)} />
-            <Tile icon="handshake" label="Contacted (all)" value={count(apps, 'Contacted') + count(books, 'Contacted')} />
+          <div className="gd-tiles">
+            <Tile i={6} icon="file" label="Applications" value={apps.length} />
+            <Tile i={7} icon="file" label="Applications this month" value={thisMonth(apps)} />
+            <Tile i={8} icon="car" label="Trippings" value={books.length} />
+            <Tile i={9} icon="calendar" label="Trippings this month" value={thisMonth(books)} />
+            <Tile i={10} icon="handshake" label="Contacted (all)" value={count(apps, 'Contacted') + count(books, 'Contacted')} />
           </div>
-        </>
+        </div>
       )}
-    </div>
+    </>
   );
 }
