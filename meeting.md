@@ -29,5 +29,21 @@ Scenario -> Negative Reaction = Negative Result
 Disclaimer (speech bubble): "Kapag tinamaan ka sa mga sasabihin ko, wag mo isipin na ikaw yun, isipin mo para yun sa katabi mo."
 Expectation: Quick Rich, Easy Money. Reality: Grind, Consistency, Struggle.
 
+### Slide 4: The 5 Phases
+1. Excitement: wants to learn/earn money right away.
+2. Disappointment: realization that Real Estate is not easy money.
+3. Critical Point of Quitting: considering giving up Real Estate.
+4. Growth & Maturity: you become more disciplined and determined.
+5. Financial Freedom: you have reached your financial goals.
+
+### Slide 5: Tips on Finding a Good Company
+- Product: high-quality, in-demand offerings.
+- Office and Public Documents: legitimate, transparent operations.
+- Owners: reputable, experienced leadership.
+- Colleagues: supportive, collaborative team.
+- Compensation Plan: fair, rewarding structure.
+- Opportunities: growth, advancement potential.
+- Lifestyle: balanced, flexible environment.
+
 ### Commissions and perk (shared earlier; already on the site)
 Overseas trip perk: 3 house sales and above.
