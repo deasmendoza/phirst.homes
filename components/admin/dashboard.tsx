@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, STATUSES, type AdminUser } from '@/components/admin/api';
+import { Commissions } from '@/components/admin/commissions';
 import { welcomeName } from '@/components/admin/shell';
 import { CARD, Icon, type IconName } from '@/components/admin/ui';
 
@@ -209,6 +210,8 @@ export function Dashboard({ user }: { user: AdminUser }) {
             <Tile icon="calendar" label="Trippings this month" value={thisMonth(books)} />
             <Tile icon="handshake" label="Contacted (all)" value={count(apps, 'Contacted') + count(books, 'Contacted')} />
           </div>
+
+          <Commissions />
         </>
       )}
     </div>
