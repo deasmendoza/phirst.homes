@@ -93,6 +93,11 @@ export function Careers() {
             </div>
           </dl>
 
+          <p className="mt-3 flex items-center gap-3 rounded-xl border border-[#e7cf9b]/55 bg-[#e7cf9b]/10 px-4 py-2 text-[clamp(14px,1.05vw,17px)] font-semibold text-white">
+            <span className="text-[#e7cf9b]" aria-hidden="true">✈</span>
+            <span><span style={{ color: CHAMPAGNE }}>Overseas trip perk:</span> close 3 house sales and above and earn a trip abroad.</span>
+          </p>
+
           {/* Requirements */}
           <div className="mt-5 rounded-2xl border border-[#e7cf9b]/55 bg-[linear-gradient(180deg,rgba(16,27,51,0.72),rgba(7,10,19,0.72))] px-5 py-4 backdrop-blur-sm xl:px-7">
             <div className="flex items-center justify-between gap-3 border-b border-white/15 pb-2.5">
