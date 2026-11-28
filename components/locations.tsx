@@ -1,3 +1,4 @@
+import { SectionSeam } from '@/components/ui/section-seam';
 import { useMemo, useState } from 'react';
 import { ISLANDS, LOCATIONS, type Island, type LocationGroup } from '@/lib/locations';
 import { MAP_HEIGHT, MAP_WIDTH, PH_PATH, project } from '@/lib/ph-map';
@@ -73,13 +74,8 @@ export function Locations() {
   };
 
   return (
-    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden bg-night px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-10 lg:pt-[92px]">
-      {/* Contour-line texture, kept faint: it only adds depth behind the map and the cards */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[#070b16]" aria-hidden="true">
-        <img src="/assets/img/locations-bg.webp" alt="" loading="lazy" className="h-full w-full object-cover opacity-[0.22]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(7,11,22,0.25),rgba(7,11,22,0.72)_78%),linear-gradient(180deg,#05070d,rgba(5,7,13,0)_20%,rgba(10,18,36,0)_78%,#0a1224)]" />
-      </div>
-
+    <section id="locations" aria-labelledby="locations-title" className="relative isolate overflow-hidden px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:items-center lg:px-10 lg:pb-10 lg:pt-[92px]">
+      <SectionSeam />
       <div className="mx-auto grid w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
         {/* ---------- Map (desktop only) ---------- */}
         <div className="hidden lg:block">
@@ -202,9 +198,12 @@ export function Locations() {
             <p className="mt-8 rounded-xl border border-white/20 bg-[#0a1120]/80 px-5 py-8 text-center text-white/80">No development matches “{query}”.</p>
           ) : (
             <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
-              {/* The open group */}
+              {/* The open group. On desktop it is never taller than the column of other provinces
+                  beside it: a long list (e.g. Batangas) scrolls inside its box, so the section keeps
+                  the same size whichever province is open. */}
               {open && (
-                <div className="overflow-hidden rounded-xl border border-gold/70 bg-[#0a1120]/88">
+                <div className="lg:relative lg:min-h-[330px] lg:self-stretch">
+                <div className="flex flex-col overflow-hidden rounded-xl border border-gold/70 bg-[#0a1120]/88 lg:absolute lg:inset-x-0 lg:top-0 lg:max-h-full">
                   <h3>
                     <button
                       type="button"
@@ -217,7 +216,7 @@ export function Locations() {
                       <Chevron open />
                     </button>
                   </h3>
-                  <ul className="max-h-[52vh] divide-y divide-white/10 overflow-y-auto lg:max-h-[min(54vh,470px)]">
+                  <ul className="divide-y divide-white/10 lg:min-h-0 lg:overflow-y-auto lg:[scrollbar-color:rgba(242,182,60,0.55)_transparent] lg:[scrollbar-width:thin]">
                     {open.developments.map((d) => (
                       <li key={d.name} className="flex gap-3.5 px-4 py-3">
                         <HouseIcon />
@@ -228,6 +227,7 @@ export function Locations() {
                       </li>
                     ))}
                   </ul>
+                </div>
                 </div>
               )}
 

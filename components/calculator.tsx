@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalculatorBackdrop } from '@/components/calculator-backdrop';
+import { RequirementsPanel, type RequirementsTab } from '@/components/requirements-panel';
+import { SHOW_REQUIREMENTS_EVENT } from '@/lib/events';
 import { Select, type Option } from '@/components/ui/select';
-import { FINANCING, YEARS, loan, pagibigAvailable, reservationFee, termsFor, type Financing } from '@/lib/compute';
+import { SectionSeam } from '@/components/ui/section-seam';
+import { FINANCING, YEARS, loan, pagibigAvailable, price, reservationFee, termsFor, type Financing } from '@/lib/compute';
 import {
   PROVINCE_ORDER,
   blockLot,
+  displayTurnover,
   loadInventory,
   phaseLabel,
   projectLabel,
@@ -17,7 +20,7 @@ import {
   type Unit,
 } from '@/lib/inventory';
 
-const EMAIL = 'm@phirst.homes';
+const MESSENGER = 'https://m.me/marielle.medina.16';
 
 const peso = new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const money = (n: number) => `₱${peso.format(n)}`;
@@ -120,6 +123,7 @@ export function Calculator() {
   const [termId, setTermId] = useState('');
   const [years, setYears] = useState('');
   const [computed, setComputed] = useState(false);
+  const [reqTab, setReqTab] = useState<RequirementsTab>('initial');
 
   useEffect(() => {
     const ctl = new AbortController();
@@ -173,7 +177,7 @@ export function Calculator() {
 
   const unit: Unit | undefined = units.find((u) => unitKey(u) === unitId);
   const noPagibig = type !== '' && !pagibigAvailable(type);
-  const terms = useMemo(() => (financing ? termsFor(financing, unit?.terms ?? '') : []), [financing, unit]);
+  const terms = useMemo(() => (financing ? termsFor(financing, unit) : []), [financing, unit]);
   const term = terms.find((t) => t.id === termId);
   const yearChoices = financing ? YEARS[financing] : [];
   const needsYears = financing !== '' && financing !== 'cash';
@@ -191,15 +195,14 @@ export function Calculator() {
     const rf = reservationFee(unit.type, unit.project);
     if (rf == null) return { unit, rf: null } as const;
 
-    const net = unit.tcp; // the sheet's TCP column already includes VAT
-    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - net) < 1;
-    const vat = vatOk ? (unit.vat as number) : 0;
-    const beforeVat = net - vat;
+    // The sheet's TCP column already includes VAT.
+    const vatOk = unit.vat != null && unit.vat > 0 && unit.tcpExVat != null && Math.abs(unit.tcpExVat + unit.vat - unit.tcp) < 1;
+    const { tcp, discount, vat, beforeVat, net } = price(unit.tcp, vatOk ? (unit.vat as number) : 0, term);
 
     const schedule = term.schedule(net, rf, beforeVat);
     const balance = net - schedule.total;
     const amort = needsYears ? loan(financing, balance, net, Number(years)) : null;
-    return { unit, rf, net, vat, beforeVat, schedule, balance, amort } as const;
+    return { unit, rf, tcp, discount, discountLabel: term.discount?.label ?? '', net, vat, beforeVat, schedule, balance, amort } as const;
   }, [unit, financing, term, years, needsYears]);
 
   const reset = () => {
@@ -210,14 +213,32 @@ export function Calculator() {
     setTermId('');
     setYears('');
     setComputed(false);
+    setReqTab('initial');
   };
 
   const financingLabel = FINANCING.find((f) => f.id === financing)?.label ?? '';
   const isCash = financing === 'cash';
   const showResult = computed && complete && result;
 
+  // The menu highlights Calculator or Requirements depending on what the panel shows.
+  useEffect(() => {
+    window.dispatchEvent(new Event('phirst:calc-view'));
+  }, [showResult]);
+
+  // The Requirements menu link brings the requirements back (selections are kept).
+  useEffect(() => {
+    const show = () => {
+      setComputed(false);
+      setReqTab('initial');
+    };
+    window.addEventListener(SHOW_REQUIREMENTS_EVENT, show);
+    return () => window.removeEventListener(SHOW_REQUIREMENTS_EVENT, show);
+  }, []);
+
+  // Inquire: Marielle's Messenger, with the unit and computation as the draft message
+  // (Messenger keeps the draft for some accounts and ignores it for others).
   const inquiry = () => {
-    if (!unit) return `mailto:${EMAIL}`;
+    if (!unit) return MESSENGER;
     const lines = [
       `Project: ${projectLabel(unit.project)}`,
       `Unit: ${phaseLabel(unit)} ${blockLot(unit.code)} (${unit.code})`,
@@ -230,7 +251,7 @@ export function Calculator() {
       'Name:',
       'Mobile number:',
     ].filter((l, i, a) => l !== '' || i >= a.length - 3);
-    return `mailto:${EMAIL}?subject=${encodeURIComponent(`Inquiry: ${titleCase(unit.type)}, ${blockLot(unit.code)}, ${projectLabel(unit.project)}`)}&body=${encodeURIComponent(lines.join('\n'))}`;
+    return `${MESSENGER}?text=${encodeURIComponent([`Hi! I'd like to inquire about this unit:`, ...lines.filter((l) => l && !/:$/.test(l))].join('\n'))}`;
   };
   // Carries the unit being viewed into the Book a Viewing form.
   const viewing = unit
@@ -242,8 +263,8 @@ export function Calculator() {
     : null;
 
   return (
-    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden bg-navy px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:pb-9 lg:pt-[88px]">
-      <CalculatorBackdrop />
+    <section id="calculator" aria-labelledby="calculator-title" className="relative isolate overflow-hidden px-4 py-12 sm:px-8 lg:flex lg:min-h-screen lg:flex-col lg:justify-center lg:px-10 lg:pb-9 lg:pt-[88px]">
+      <SectionSeam />
 
       <div className="mx-auto grid w-full max-w-[1480px] items-stretch gap-6 lg:grid-cols-[minmax(410px,460px)_minmax(0,1fr)]">
         {/* ---------- Inputs ---------- */}
@@ -252,7 +273,7 @@ export function Calculator() {
             <Icon name="calculator" className="mt-1 size-10 text-gold" />
             <div>
               <h2 id="calculator-title" className="font-serif text-[27px] font-semibold leading-tight text-white xl:whitespace-nowrap xl:text-[29px]">
-                Home Financing <span className="text-gold">Calculator</span>
+                Sample <span className="text-gold">Computation</span>
               </h2>
               <p className="mt-1 text-[15px] text-white/85">Estimate your downpayment and monthly amortization.</p>
             </div>
@@ -345,15 +366,14 @@ export function Calculator() {
                 onClick={reset}
                 className="inline-flex h-12 flex-1 items-center justify-center gap-2.5 whitespace-nowrap rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                <Icon name="reset" /> Reset / Compute Another
+                <Icon name="reset" /> Reset / Back to Requirements
               </button>
             </div>
           </form>
         </div>
 
         {/* ---------- Result ---------- */}
-        <div id="calculator-result" className="print-area rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
-          {status === 'loading' && <Notice icon="empty" title="Loading available units…">One moment while we fetch today's inventory.</Notice>}
+        <div id="calculator-result" data-view={showResult ? 'computation' : 'requirements'} className="print-area flex flex-col rounded-2xl border border-white/20 bg-[#0a1120]/90 p-5 backdrop-blur-sm" aria-live="polite">
 
           {status === 'error' && (
             <Notice icon="nounit" title="Inventory is unavailable right now" tone="red">
@@ -367,17 +387,14 @@ export function Calculator() {
             </Notice>
           )}
 
-          {status === 'ready' && inventory.units.length > 0 && !showResult && (
-            <Notice icon="empty" title="Compute Your Home Plan">
-              Select a project, house model, unit, and financing details to see your monthly computation.
-            </Notice>
-          )}
+          {/* Until a computation is made: the reservation requirements (also while units load) */}
+          {(status === 'loading' || (status === 'ready' && inventory.units.length > 0)) && !showResult && <RequirementsPanel tab={reqTab} onTab={setReqTab} />}
 
           {status === 'ready' && showResult && result.rf == null && (
             <Notice icon="info" title="Please inquire for this unit">
               The published reservation fee schedule does not cover {titleCase(result.unit.type)} in {projectLabel(result.unit.project)}, so we cannot show a sample computation here.
               <div className="mt-5">
-                <a href={inquiry()} className="inline-flex h-11 items-center gap-2 rounded-lg border border-gold px-5 font-semibold text-gold hover:bg-gold hover:text-black">
+                <a href={inquiry()} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center gap-2 rounded-lg border border-gold px-5 font-semibold text-gold hover:bg-gold hover:text-black">
                   <Icon name="chat" /> Inquire about this unit
                 </a>
               </div>
@@ -386,11 +403,37 @@ export function Calculator() {
 
           {status === 'ready' && showResult && result.rf != null && (
             <>
+              {/* Printed page only: washed-out logo behind the computation, and the site address */}
+              <div className="print-only print-watermark" aria-hidden="true">
+                <img src="/assets/img/ph-badge-512.png" alt="" />
+              </div>
+              <div className="print-only print-head">
+                <img src="/assets/img/ph-badge-512.png" alt="" />
+                <div>
+                  <div className="print-head-title">Sample Computation</div>
+                  <div className="print-head-sub">PHIRST.HOMES · Team M-BigTime, Accredited PHirst Sales Team</div>
+                </div>
+                <div className="print-head-date">
+                  Prepared {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+              </div>
+              <div className="print-only print-footer">
+                <ul>
+                  <li>Sample computation only. Prices and terms are subject to change without prior notice.</li>
+                  <li>Reservation fee is non-refundable and non-transferable.</li>
+                  <li>Monthly amortization is an estimate based on indicative interest rates.</li>
+                </ul>
+                <span>https://phirst.homes/calculator</span>
+              </div>
               {/* Unit header */}
-              <div className="mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
-                <div className="relative h-[118px] w-[200px] overflow-hidden rounded-lg border border-white/15 bg-[#101b33]">
+              <div className="print-unit mb-4 grid gap-5 md:grid-cols-[auto_1fr_auto] md:items-center">
+                <div
+                  className={`print-hide relative overflow-hidden rounded-lg border border-white/15 bg-[#101b33] ${
+                    seriesImage(result.unit.type)?.shape === 'tall' ? 'h-[150px] w-[120px]' : 'h-[118px] w-[210px]'
+                  }`}
+                >
                   {seriesImage(result.unit.type) ? (
-                    <img src={seriesImage(result.unit.type)!} alt="" className="absolute inset-0 h-full w-full origin-[50%_62%] scale-[1.6] object-cover" />
+                    <img src={seriesImage(result.unit.type)!.src} alt={`${titleCase(result.unit.type)} at night`} className="absolute inset-0 h-full w-full object-cover" />
                   ) : (
                     <div className="grid h-full place-items-center text-white/40"><Icon name="home" className="size-12" /></div>
                   )}
@@ -414,7 +457,7 @@ export function Calculator() {
                       {termsLabel(result.unit.terms)}
                     </div>
                   )}
-                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {result.unit.turnover}</div>}
+                  {result.unit.turnover && <div className="flex items-center gap-2.5"><Icon name="calendar" className="size-[18px] text-gold" /> Est. Turnover: {displayTurnover(result.unit.turnover)}</div>}
                   {result.unit.houseCon && <div className="flex items-center gap-2.5"><Icon name="tools" className="size-[18px] text-gold" /> Construction: {result.unit.houseCon}</div>}
                   {asOf && <div className="pt-1.5 text-[13px] text-white/70">Inventory as of {asOf}</div>}
                 </div>
@@ -425,14 +468,20 @@ export function Calculator() {
                 <div>
                   <SectionTitle icon="coins">Price Details</SectionTitle>
                   <dl className="grid overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d] sm:grid-flow-col sm:auto-cols-fr">
-                    <PriceCell label="Total Contract Price (TCP)" value={money(result.beforeVat)} />
+                    <PriceCell label="Total Contract Price (TCP)" value={money(result.tcp)} />
+                    {result.discount > 0 && <PriceCell label={`Less: ${result.discountLabel}`} value={`− ${money(result.discount)}`} />}
                     {result.vat > 0 && <PriceCell label="VAT (12%)" value={money(result.vat)} />}
                     <PriceCell label="Net Contract Price" value={money(result.net)} highlight />
                   </dl>
+                  {result.discount > 0 && (
+                    <p className="mt-1.5 text-[12px] text-white/60">
+                      Discount applies only if payment and requirements are completed within the stated period; otherwise it is subject to reassessment.
+                    </p>
+                  )}
                 </div>
 
                 {/* Downpayment | Balance & Monthly Amortization: two equal columns */}
-                <div className="grid gap-4 xl:grid-cols-2">
+                <div className="print-cols grid gap-4 xl:grid-cols-2">
                   <div className="flex flex-col">
                     <SectionTitle icon="wallet">{isCash ? 'Payment Schedule' : 'Downpayment'}</SectionTitle>
                     <div className="flex flex-1 flex-col overflow-hidden rounded-lg bg-[#f7f4ec] text-[#16181d]">
@@ -495,7 +544,7 @@ export function Calculator() {
                 <a href={viewing} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg bg-[linear-gradient(180deg,#ffd77a,#f2b63c_55%,#c98a1a)] px-5 text-[17px] font-bold text-[#14100a] shadow-lg shadow-black/40 transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                   <Icon name="calendar" /> Book a Viewing
                 </a>
-                <a href={inquiry()} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+                <a href={inquiry()} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
                   <Icon name="chat" /> Inquire about this unit
                 </a>
                 <button type="button" onClick={() => window.print()} className="inline-flex h-12 items-center justify-center gap-2.5 rounded-lg border border-white/45 px-5 text-[15px] font-semibold text-white transition hover:border-gold hover:text-gold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">

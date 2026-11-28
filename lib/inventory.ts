@@ -88,9 +88,40 @@ export function sortUnits(units: Unit[]) {
   });
 }
 
-/** Night render shown in the unit header, for the models that have one. */
-export function seriesImage(type: string) {
+/**
+ * Night picture of the chosen model for the computation header. Townhouses are 16:9 so the
+ * whole row shows; single-detached houses are portrait (Corin square) so the house is never cut.
+ */
+const MODEL_PICTURES: [RegExp, string, 'wide' | 'tall'][] = [
+  [/^CALISTA/, 'calista', 'wide'],
+  [/^AMANI/, 'amani', 'wide'],
+  [/^ALORA/, 'alora', 'wide'],
+  [/^AURORA/, 'aurora', 'wide'],
+  [/^UNNA/, 'unna', 'tall'],
+  [/^BRENNA/, 'brenna', 'tall'],
+  [/^DUA/, 'dua', 'tall'],
+  [/^CARTLAND/, 'cartland', 'tall'],
+  [/^CHARLES/, 'charles', 'tall'],
+  [/^CHRISTIE/, 'christie', 'tall'],
+  [/^CORIN/, 'corin', 'tall'],
+];
+
+export function seriesImage(type: string): { src: string; shape: 'wide' | 'tall' } | null {
   const t = type.toUpperCase();
-  const n = /^CALISTA/.test(t) ? 1 : /^AMANI/.test(t) ? 2 : /^ALORA/.test(t) ? 3 : /^UNNA/.test(t) ? 4 : /^(CARTLAND|CHARLES|CHRISTIE)/.test(t) ? 5 : /^CORIN/.test(t) ? 6 : 0;
-  return n ? `/assets/img/hero/model-${n}.webp` : null;
+  const hit = MODEL_PICTURES.find(([re]) => re.test(t));
+  return hit ? { src: `/assets/img/compute/${hit[1]}.webp`, shape: hit[2] } : null;
+}
+
+/**
+ * Turnover date as shown to buyers: the inventory's date plus 3 months, because handovers
+ * usually run late (owner's instruction, Nov 2026). "Jun 2028" becomes "Sep 2028".
+ * Anything that is not a "Mon YYYY" date is shown as it is.
+ */
+export function displayTurnover(date: string): string {
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(date.trim());
+  const month = m ? MONTHS.findIndex((x) => x.toLowerCase() === m[1].toLowerCase()) : -1;
+  if (!m || month < 0) return date;
+  const total = Number(m[2]) * 12 + month + 3;
+  return `${MONTHS[total % 12]} ${Math.floor(total / 12)}`;
 }

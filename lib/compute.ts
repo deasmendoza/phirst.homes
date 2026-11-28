@@ -26,6 +26,13 @@ export interface Term {
   label: string;
   /** The template's "SPOT 5% RS MONTH" sheet: spot 5% paid on reservation, as RSBS units require. */
   rsbs?: boolean;
+  /**
+   * Discount for paying on time, as a share of the contract price before VAT. The templates list these
+   * rates beside the computation (multiplied by 0 there); the owner asked for them to be applied.
+   */
+  discount?: { label: string; rate: number };
+  /** Offered only for some models and only while the unit is far enough from completion; see termsFor. */
+  lowDp?: boolean;
   schedule: (net: number, rf: number, beforeVat: number) => Schedule;
 }
 
@@ -86,12 +93,15 @@ const spotOnly = (pct: number) => (net: number, rf: number): Schedule => ({
 });
 
 const PAGIBIG: Term[] = [
+  // Owner's instruction (Nov 2026): Alora, Aurora and Amani also get 10% in 12 months under Pag-IBIG.
+  // Same formula as the bank's "10% IN 12 MOS" sheet.
+  { id: 'pif-10-12', label: '10% in 12 months', lowDp: true, schedule: installment(0.1, 12) },
   { id: 'pif-20-12', label: '20% in 12 months', schedule: installment(0.2, 12) },
   { id: 'pif-20-18', label: '20% in 18 months', schedule: installment(0.2, 18) },
-  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', rsbs: true, schedule: spotThen(1, 0.1, 15) },
-  { id: 'pif-s5-30-5-13', label: 'Spot 5% in 30 days + 5% in 13 months', schedule: spotThen(1, 0.05, 13) },
-  { id: 'pif-s5-60-5-13', label: 'Spot 5% in 60 days + 5% in 13 months', schedule: spotThen(2, 0.05, 13) },
-  { id: 'pif-s5-90-5-13', label: 'Spot 5% in 90 days + 5% in 13 months', schedule: spotThen(3, 0.05, 13) },
+  { id: 'pif-s5rs-10-15', label: 'Spot 5% (reservation month) + 10% in 15 months', rsbs: true, discount: { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.0040 }, schedule: spotThen(1, 0.1, 15) },
+  { id: 'pif-s5-30-5-13', label: 'Spot 5% in 30 days + 5% in 13 months', discount: { label: 'Spot DP Discount (6% of the 5% spot)', rate: 0.0030 }, schedule: spotThen(1, 0.05, 13) },
+  { id: 'pif-s5-60-5-13', label: 'Spot 5% in 60 days + 5% in 13 months', discount: { label: 'Spot DP Discount (3% of the 5% spot)', rate: 0.0015 }, schedule: spotThen(2, 0.05, 13) },
+  { id: 'pif-s5-90-5-13', label: 'Spot 5% in 90 days + 5% in 13 months', discount: { label: 'Spot DP Discount (1% of the 5% spot)', rate: 0.0005 }, schedule: spotThen(3, 0.05, 13) },
   { id: 'pif-s20', label: 'Spot 20%', schedule: spotOnly(0.2) },
 ];
 
@@ -99,10 +109,10 @@ const BANK: Term[] = [
   { id: 'bank-10-12', label: '10% in 12 months', schedule: installment(0.1, 12) },
   { id: 'bank-15-14', label: '15% in 14 months', schedule: installment(0.15, 14) },
   { id: 'bank-15-18', label: '15% in 18 months', schedule: installment(0.15, 18) },
-  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', rsbs: true, schedule: spotThen(1, 0.1, 13) },
-  { id: 'bank-s5-30-10-13', label: 'Spot 5% in 30 days + 10% in 13 months', schedule: spotThen(1, 0.1, 13) },
-  { id: 'bank-s5-60-10-13', label: 'Spot 5% in 60 days + 10% in 13 months', schedule: spotThen(2, 0.1, 13) },
-  { id: 'bank-s5-90-10-13', label: 'Spot 5% in 90 days + 10% in 13 months', schedule: spotThen(3, 0.1, 13) },
+  { id: 'bank-s5rs-10-13', label: 'Spot 5% (reservation month) + 10% in 13 months', rsbs: true, discount: { label: 'Spot DP Discount (8% of the 5% spot)', rate: 0.0040 }, schedule: spotThen(1, 0.1, 13) },
+  { id: 'bank-s5-30-10-13', label: 'Spot 5% in 30 days + 10% in 13 months', discount: { label: 'Spot DP Discount (6% of the 5% spot)', rate: 0.0030 }, schedule: spotThen(1, 0.1, 13) },
+  { id: 'bank-s5-60-10-13', label: 'Spot 5% in 60 days + 10% in 13 months', discount: { label: 'Spot DP Discount (3% of the 5% spot)', rate: 0.0015 }, schedule: spotThen(2, 0.1, 13) },
+  { id: 'bank-s5-90-10-13', label: 'Spot 5% in 90 days + 10% in 13 months', discount: { label: 'Spot DP Discount (1% of the 5% spot)', rate: 0.0005 }, schedule: spotThen(3, 0.1, 13) },
   // The template names this sheet "SPOT 10%" while its formula takes 20%; kept as is.
   { id: 'bank-s10', label: 'Spot 10%', schedule: spotOnly(0.2) },
 ];
@@ -126,9 +136,19 @@ const withTotal = (s: Schedule, rf: number): Schedule => ({
 
 const CASH: Term[] = [
   {
-    id: 'cash-spot',
-    label: 'Spot Cash',
+    id: 'cash-spot-rs',
+    label: 'Spot Cash (within the reservation month)',
+    discount: { label: 'Spot Cash Discount (7%)', rate: 0.07 },
     // P29 =P22-P28-P30, P30 Retention Fee 5000
+    schedule: (net, rf) =>
+      withTotal(
+        { dpPct: null, spots: [{ label: 'Spot Payment', amount: net - rf - 5000 }], monthly: null, last: null, extra: [{ label: 'Retention Fee', amount: 5000 }], total: 0 },
+        rf,
+      ),
+  },  {
+    id: 'cash-spot-30',
+    label: 'Spot Cash (within 30 days)',
+    discount: { label: 'Spot Cash Discount (6%)', rate: 0.06 },
     schedule: (net, rf) =>
       withTotal(
         { dpPct: null, spots: [{ label: 'Spot Payment', amount: net - rf - 5000 }], monthly: null, last: null, extra: [{ label: 'Retention Fee', amount: 5000 }], total: 0 },
@@ -168,7 +188,7 @@ export const TERMS: Record<Financing, Term[]> = { pagibig: PAGIBIG, bank: BANK, 
 
 export const YEARS: Record<Financing, number[]> = {
   pagibig: [30, 25, 20, 15, 10],
-  bank: [15, 10, 5],
+  bank: [20, 15, 10, 5], // 20 years added on the owner's instruction (Nov 2026); same 10% rate
   inhouse: [10, 5],
   cash: [],
 };
@@ -231,14 +251,62 @@ export function reservationFee(unitType: string, project: string): number | null
  */
 export const pagibigAvailable = (unitType: string) => !/^(UNNA|DUA|BRENNA|CARTLAND|CHARLES|CHRISTIE|CORIN)\b/.test(unitType.toUpperCase());
 
+/** Months from this month to a "Jun 2028"-style date; null when the date is blank or unreadable. */
+export function monthsUntil(date: string, now = new Date()): number | null {
+  const m = /^([A-Za-z]{3})[a-z]*\.?\s+(\d{4})$/.exec(date.trim());
+  if (!m) return null;
+  const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(m[1].toLowerCase());
+  if (month < 0) return null;
+  return Number(m[2]) * 12 + month - (now.getFullYear() * 12 + now.getMonth());
+}
+
+const LOW_DP_MODELS = /^(ALORA|AURORA|AMANI)\b/;
+
 /**
- * Payment terms offered for a unit. RSBS units (reservation sale and book sale: spot 5%
- * downpayment on reservation) get only the reservation-month spot term, not the Memo
- * Terms instalment plans. Cash terms are left as they are: the template has no RSBS
- * version of them.
+ * Payment terms offered for a unit.
+ * - RSBS units (reservation sale and book sale: spot 5% downpayment on reservation) get only
+ *   the reservation-month spot term, not the Memo Terms instalment plans. Cash terms are left
+ *   as they are: the template has no RSBS version of them.
+ * - Pag-IBIG "10% in 12 months" is only for Alora, Aurora and Amani, and only when the unit's
+ *   estimated date in the inventory is at least 12 months away (a unit near completion cannot
+ *   spread its downpayment over a year). A unit with no date in the inventory is treated as far
+ *   from completion.
  */
-export function termsFor(financing: Financing, unitTerms: string): Term[] {
-  const all = TERMS[financing];
-  if (financing === 'cash' || !/RSBS/i.test(unitTerms)) return all;
+export function termsFor(financing: Financing, unit?: { terms: string; type: string; turnover: string }, now = new Date()): Term[] {
+  let all = TERMS[financing];
+  if (unit) {
+    const months = monthsUntil(unit.turnover, now);
+    const lowDpOk = LOW_DP_MODELS.test(unit.type.toUpperCase()) && (months === null || months >= 12);
+    if (!lowDpOk) all = all.filter((t) => !t.lowDp);
+  } else {
+    all = all.filter((t) => !t.lowDp);
+  }
+  if (financing === 'cash' || !unit || !/RSBS/i.test(unit.terms)) return all;
   return all.filter((t) => t.rsbs);
+}
+
+export interface Price {
+  /** Contract price before VAT, before any discount (the template's TCP). */
+  tcp: number;
+  discount: number;
+  /** VAT after the discount. */
+  vat: number;
+  /** Price before VAT, after the discount (the template's P18). */
+  beforeVat: number;
+  /** Net contract price after discount and VAT (the template's P22). */
+  net: number;
+}
+
+/**
+ * The discount comes off the price before VAT. VAT then shrinks by the same share: in the
+ * template the processing fee is discounted by the total discount % and VAT is 12% of what
+ * remains, which works out to VAT x (1 - discount / TCP).
+ */
+export function price(tcpWithVat: number, vat: number, term?: Term): Price {
+  const tcp = tcpWithVat - vat;
+  const discount = term?.discount ? tcp * term.discount.rate : 0;
+  const share = tcp > 0 ? discount / tcp : 0;
+  const vatAfter = vat * (1 - share);
+  const beforeVat = tcp - discount;
+  return { tcp, discount, vat: vatAfter, beforeVat, net: beforeVat + vatAfter };
 }

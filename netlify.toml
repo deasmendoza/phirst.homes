@@ -6,13 +6,30 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# /calculator is the homepage, scrolled to the calculator (no "#" in the address).
+# /calculator and /requirements are the homepage, scrolled to the calculator section
+# (no "#" in the address). The old /how-to-buy opens the same section.
+[[redirects]]
+  from = "/how-to-buy"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/how-to-buy/"
+  to = "/index.html"
+  status = 200
 [[redirects]]
   from = "/calculator"
   to = "/index.html"
   status = 200
 [[redirects]]
   from = "/calculator/"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/requirements"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/requirements/"
   to = "/index.html"
   status = 200
 
@@ -58,3 +75,66 @@
   to = "/index.html"
   status = 200
   force = true
+
+# /house-models is the homepage, scrolled to the House Models section. "force" makes this win over
+# the old static page in public/house-models; the pages under it (e.g. /house-models/unna/) stay.
+[[redirects]]
+  from = "/house-models"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/house-models/"
+  to = "/index.html"
+  status = 200
+  force = true
+
+# /application is the Sellers Accreditation Form page (the homepage file, which shows the form for this address).
+[[redirects]]
+  from = "/application"
+  to = "/index.html"
+  status = 200
+[[redirects]]
+  from = "/application/"
+  to = "/index.html"
+  status = 200
+
+# /admin is the private admin page (the homepage file; the page itself asks people to sign in).
+# It is never cached and never indexed.
+[[redirects]]
+  from = "/admin"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/admin/"
+  to = "/index.html"
+  status = 200
+  force = true
+# /login is the homepage with the staff sign-in box open. Never cached, never indexed.
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/login/"
+  to = "/index.html"
+  status = 200
+  force = true
+[[headers]]
+  for = "/login"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/admin"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
