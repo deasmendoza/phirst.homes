@@ -8,7 +8,8 @@
 //    open the hero first and then scroll to their section (otherwise the hero scrolls them back up)
 //  - a page opened on a section address (e.g. /calculator) starts already expanded
 //  - keyboard keys expand it too, and the empty content block is not drawn when there are no children
-//  - on desktop the picture keeps clear of the fixed navigation
+//  - on desktop the picture keeps well clear of the fixed navigation
+//  - the expanding picture is toned down with a CSS filter (less glow and neon)
 //  - "Scroll to explore" rises and fades as the picture opens, instead of sliding off to the side
 //  - the title has a dark outline and shadow so it stays readable over a busy picture
 //  - a title written "First|Rest" sets its two lines explicitly
@@ -243,7 +244,7 @@ const ScrollExpandMedia = ({
                   width: `${mediaWidth}px`,
                   height: `${mediaHeight}px`,
                   maxWidth: "95vw",
-                  maxHeight: isMobileState ? "85vh" : "min(85vh, calc(100dvh - 180px))",
+                  maxHeight: isMobileState ? "85vh" : "min(80vh, calc(100dvh - 250px))",
                   boxShadow: `0 0 0 1px ${GOLD}66, 0px 0px 50px rgba(0, 0, 0, 0.3)`,
                 }}
               >
@@ -316,6 +317,8 @@ const ScrollExpandMedia = ({
                       height={720}
                       decoding="async"
                       className="w-full h-full object-cover rounded-xl"
+                      // Calms the glow and the neon yellow of the illustration; the picture file itself is untouched.
+                      style={{ filter: "saturate(0.72) contrast(0.93) brightness(0.98)" }}
                     />
 
                     <motion.div
